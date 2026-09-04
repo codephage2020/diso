@@ -15,7 +15,8 @@ Topic: $ARGUMENTS
 
 1. **Every analogy ships with a mapping** — a table mapping each analogy role to the real component it stands for.
 2. **Every analogy ships with its failure points** — state where it stops holding.
-3. **Never avoid real terminology** — define on first use, then keep using the real term.
+3. **Never avoid real terminology** — define on first use, then keep using the real term. One concept gets exactly one name across the whole page: never alternate between the analogy name and the real name for the same thing.
+4. **Never trust parametric memory for facts.** Every number, date, version, standard clause, or named source must be verified (search / read the source) before it lands on the page; what cannot be verified is dropped or explicitly marked as approximate. One invented "oh, I see" figure destroys the page's credibility.
 
 Tone: adult to adult. The reader is smart, just lacks background. Banned: baby talk, mascots, coaxing exclamations, emoji as punctuation. **What drops is the barrier to entry, not the information density.**
 
@@ -25,7 +26,7 @@ Tone: adult to adult. The reader is smart, just lacks background. Banned: baby t
 |---|---|---|
 | `--kid` | intuition only | 1–2 |
 | (default) | standard | 1–4 |
-| `--deep` | deep dive | 1–5 + formal description (formula / pseudocode / data structure), order-of-magnitude estimates, boundary conditions |
+| `--deep` | deep dive | 1–5 + formal description (formula / pseudocode / data structure), order-of-magnitude estimates, boundary conditions; may close with a **cheat sheet** |
 
 ## 3. Five-layer skeleton
 
@@ -41,29 +42,30 @@ Tone: adult to adult. The reader is smart, just lacks background. Banned: baby t
 
 **Ending — one-sentence summary**: repeatable verbatim, contains the mechanism, not the metaphor. In Chinese pages the takeaway block's eyebrow reads 「一句话总结」.
 
+**Cheat sheet** (`--deep` only, optional): a compact final section for later reference — the term mapping and the formal description, restated tightly using tables and code blocks. No new prose, no new diagrams; it is the page's distillate.
+
 ## 4. HTML output
 
 Read `references/design-tokens.md` before every generation; build the page on `references/output-template.md`. The reference files are written in English; **every visible string in the produced HTML must be localized to the request language** using the string map at the bottom of `output-template.md`.
 
 Produce **one self-contained HTML file**: inline SVG, no external links, no CDN, no JS, no build step, opens on double-click. The page must read as typeset paper, not a dashboard.
 
-Five non-negotiables:
-
-1. **Parchment `#f5f4ed` canvas, never pure white.** All grays warm (R ≈ G > B); cold grays banned.
-2. **Two accent hues with semantic division: celadon and terracotta.** Celadon `#78C2C4` owns focus, structure, and the positive; terracotta `#C47A78` owns warning, cost, and failure — never swap their meanings. Each hue has a wash (fills only) and an ink depth for text and thin lines: `#267072` (≈5.2:1) and `#8C4644` (≈6.2:1); the washes alone (≈1.9:1 / ≈3.0:1) are illegible as text. Combined solid accent fills ≤ 5% of page area.
-3. **One serif family, weights 400/500 only.** `strong` locked to 500, no synthetic bold.
-4. **Flat surfaces.** Elevation comes from ivory `#faf9f5` fill, never borders or shadows.
-5. **Subtraction principle.** A line must separate regions, encode state, or carry a data relationship; otherwise delete it.
-
-Signature components: intuition steps open with a large serif numeral (`01`, celadon ink) + mono tag; order-of-magnitude "oh, I see" facts go into `.stats` big-number cards, not buried in prose; paired gained/cost trade-offs use `.versus` twin cards; the page ends with the dark takeaway block followed by a one-line `.colophon`. Print stylesheet included; details blocks expand when printed.
+The visual system in one breath: parchment `#f5f4ed` canvas, never pure white; two accent hues with divided semantics — celadon owns focus and the positive, terracotta owns cost and failure; one serif family at weights 400/500; flat surfaces, elevation by fill; a line must separate regions, encode state, or carry a data relationship, otherwise delete it. Full palette, components, and SVG rules live in `references/design-tokens.md` — follow it exactly.
 
 ## 5. Quality checklist (verify after generation; fix anything failing)
 
+Content:
+
 - [ ] Reader can state the mechanism, not just "it's like a X"; substance > 50% after deleting all analogies
-- [ ] At least one "oh, I see" moment, rendered as a `.stats` card when it involves magnitude; analogy failure points written; tone is colleague-to-colleague
+- [ ] Every number, date, and named source verified; unverifiable claims dropped or marked approximate
+- [ ] One concept = one name throughout the page; analogy failure points written; tone is colleague-to-colleague
+- [ ] At least one "oh, I see" moment, rendered as a `.stats` card when it involves magnitude
+
+Visual (full rules in `design-tokens.md`):
+
 - [ ] Intuition steps use the `01` serif numeral + mono tag header; numerals used nowhere else on the page
 - [ ] Background `#f5f4ed`; grays warm; no hue besides celadon (focus/positive) and terracotta (cost/failure); combined solid accent fills ≤ 5%
-- [ ] No text or thin lines in `#78C2C4` / `#C47A78` (must be `#267072` / `#8C4644` on light surfaces); misconception callouts use the rose tint, not the celadon one
+- [ ] No text or thin lines in `#78C2C4` / `#C47A78` (ink depths `#267072` / `#8C4644` on light surfaces); misconception callouts use the rose tint
 - [ ] No `box-shadow`, gradients, `rgba()`, radii > 10px, italics, weight > 500
 - [ ] SVG coordinates divisible by 4; focus nodes 1–2 per diagram; arrows are hand-drawn chevrons, not `<marker>`; text baseline `y ≥ font-size × 1.2`; on-line labels sit on a `#f5f4ed` backing rect
 - [ ] **Edges are 0°/90° only (no diagonals)**; every edge endpoint lands on a node-edge midpoint, a bus, or a timeline — no dangling arrows, no corner attachments; timeline dots drawn above the line with stubs connecting every node below
