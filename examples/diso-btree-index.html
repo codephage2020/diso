@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>数据库索引（B+ 树） · 深入浅出</title>
+<style>
+  :root{
+    --brand:#78C2C4; --brand-ink:#267072; --brand-light:#9AD8DA;
+    --accent:#C47A78; --accent-ink:#8C4644; --accent-light:#D89D9B; --accent-tint:#F4E8E7;
+    --parchment:#f5f4ed; --ivory:#faf9f5; --inline-code-bg:#f0eee6; --warm-sand:#e8e6dc;
+    --dark-surface:#30302e; --deep-dark:#1B2E2E;
+    --near-black:#141413; --dark-warm:#3d3d3a; --olive:#504e49; --stone:#6b6a64;
+    --border:#e8e6dc; --border-soft:#e5e3d8;
+    --tag-bg:#DDEFEF; --brand-tint:#E9F4F4; --selection-bg:#CDE9E9;
+    --serif: Charter, "Bitstream Charter", Georgia,
+             "TsangerJinKai02", "Source Han Serif SC", "Noto Serif SC",
+             "Source Han Serif CN", "Noto Serif CJK SC", "思源宋体",
+             "Songti SC", "STSong", SimSun, "宋体", serif;
+    --sans: var(--serif);
+    --mono: "JetBrains Mono", "SF Mono", "Cascadia Code", "Fira Code",
+            Consolas, Monaco, "Courier New",
+            "TsangerJinKai02", "Noto Serif SC", Georgia, serif;
+  }
+  *{box-sizing:border-box;}
+  html{background:var(--parchment);scroll-behavior:smooth;}
+  section.part,.takeaway{scroll-margin-top:32px;}
+  body{margin:0;background:var(--parchment);color:var(--near-black);
+       font-family:var(--serif);font-weight:400;
+       font-size:18px;line-height:1.65;letter-spacing:0.3px;
+       font-kerning:normal;text-rendering:optimizeLegibility;
+       hanging-punctuation:first allow-end;
+       font-synthesis:none;-webkit-font-smoothing:antialiased;}
+  ::selection{background:var(--selection-bg);color:var(--near-black);}
+  .wrap{max-width:760px;margin:0 auto;padding:0 32px 120px;}
+  p,li{text-align:justify;text-justify:inter-ideograph;}
+
+  .hero{padding:112px 0 44px;}
+  .eyebrow{font-family:var(--mono);font-size:12px;font-weight:500;
+           letter-spacing:2px;text-transform:uppercase;color:var(--stone);}
+  h1{font-size:48px;font-weight:500;line-height:1.18;letter-spacing:0.5px;
+     margin:20px 0 24px;color:var(--near-black);}
+  .essence{font-size:22px;line-height:1.60;font-weight:400;color:var(--dark-warm);
+           margin:0;max-width:640px;text-align:justify;}
+  .essence strong{color:var(--brand-ink);font-weight:500;}
+  .rule{position:relative;height:1px;background:var(--border);border:0;margin:44px 0 0;}
+  .rule::before{content:"";position:absolute;left:0;top:-1px;width:72px;height:3px;
+                background:var(--brand);border-radius:2px;}
+
+  section.part{margin-top:96px;}
+  .part-eyebrow{font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:2px;
+                text-transform:uppercase;color:var(--brand-ink);margin-bottom:16px;}
+  h2{font-size:30px;font-weight:500;line-height:1.25;letter-spacing:0.3px;
+     margin:0 0 24px;color:var(--near-black);}
+  .lede{font-size:20px;line-height:1.60;color:var(--olive);margin:0 0 44px;max-width:620px;}
+  h3{font-size:21px;font-weight:500;line-height:1.30;margin:0 0 10px;color:var(--near-black);}
+  p{margin:0 0 20px;}
+  ul{padding-left:24px;margin:0 0 20px;}
+  li{margin:0 0 8px;}
+  ul li::marker{color:var(--brand-ink);}
+
+  .step{margin:0 0 72px;}
+  .step:last-child{margin-bottom:0;}
+  figure{margin:0 0 22px;}
+  figure svg{display:block;width:100%;height:auto;border-radius:8px;}
+  figcaption{font-size:15px;line-height:1.50;color:var(--olive);margin-top:12px;}
+  .fig-label{font-family:var(--mono);font-size:12px;font-weight:500;
+             letter-spacing:1px;color:var(--brand-ink);margin-right:8px;}
+  .step-head{display:flex;align-items:baseline;gap:16px;margin:0 0 10px;}
+  .step-num{font-size:30px;font-weight:400;line-height:1;color:var(--brand-ink);
+            font-variant-numeric:lining-nums tabular-nums;}
+  .step-label{font-family:var(--mono);font-size:12px;font-weight:500;
+              letter-spacing:2px;color:var(--brand-ink);}
+  .step-txt{font-size:19px;line-height:1.65;color:var(--near-black);}
+
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+         gap:16px;margin:28px 0;}
+  .stat{background:var(--ivory);border-radius:8px;padding:20px 24px;}
+  .stat b{display:block;font-size:34px;font-weight:500;line-height:1.1;
+          color:var(--brand-ink);font-variant-numeric:lining-nums tabular-nums;}
+  .stat span{display:block;font-size:14px;line-height:1.50;color:var(--olive);margin-top:8px;}
+
+  .versus{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:24px 0;}
+  .vs-card{background:var(--ivory);border-radius:8px;padding:22px 26px;}
+  .vs-label{font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:2px;
+            text-transform:uppercase;display:block;margin-bottom:10px;}
+  .vs-card.gain .vs-label{color:var(--brand-ink);}
+  .vs-card.cost .vs-label{color:var(--accent-ink);}
+  .vs-card p{margin:0;font-size:17px;line-height:1.60;color:var(--dark-warm);}
+
+  blockquote{margin:28px 0;padding:0;font-size:20px;line-height:1.60;color:var(--dark-warm);}
+  blockquote strong{color:var(--brand-ink);font-weight:500;}
+
+  table{width:100%;border-collapse:collapse;font-size:17px;margin:24px 0;}
+  th{text-align:left;font-weight:500;color:var(--dark-warm);
+     padding:9px 12px;border-bottom:0.6px solid var(--border);}
+  td{padding:8px 12px;border-bottom:0.25px solid var(--border);
+     vertical-align:top;color:var(--near-black);}
+  td:first-child{color:var(--near-black);font-weight:500;white-space:nowrap;}
+  tr:last-child td{border-bottom:none;}
+  .num{font-variant-numeric:lining-nums tabular-nums;color:var(--brand-ink);font-weight:500;}
+
+  .term{color:var(--brand-ink);font-weight:500;}
+  .alert{color:var(--accent-ink);font-weight:500;}
+  strong{font-weight:500;}
+  code{font-family:var(--mono);background:var(--inline-code-bg);color:var(--dark-warm);
+       padding:1px 5px;border-radius:3px;font-size:0.88em;}
+  pre{background:var(--ivory);border-radius:8px;padding:16px 20px;margin:20px 0;
+      font-family:var(--mono);font-size:15px;line-height:1.55;
+      color:var(--near-black);overflow-x:auto;}
+  pre code{background:none;padding:0;font-size:inherit;color:inherit;}
+
+  details{background:var(--ivory);border-radius:8px;padding:0;margin:24px 0;}
+  summary{cursor:pointer;padding:16px 22px;font-size:18px;font-weight:500;
+          color:var(--brand-ink);list-style:none;user-select:none;letter-spacing:0.3px;}
+  summary::-webkit-details-marker{display:none;}
+  summary::before{content:"+ ";font-family:var(--mono);}
+  details[open] summary::before{content:"\2212  ";}
+  summary:focus-visible{outline:2px solid var(--brand-ink);outline-offset:2px;border-radius:4px;}
+  .dbody{padding:0 22px 20px;font-size:17px;line-height:1.60;color:var(--dark-warm);}
+  .dbody p:last-child{margin-bottom:0;}
+
+  .callout{background:var(--accent-tint);border-radius:8px;padding:22px 26px;margin:0 0 16px;}
+  .callout-label{font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:2px;
+                 text-transform:uppercase;color:var(--accent-ink);display:block;margin-bottom:10px;}
+  .callout h3{font-size:19px;margin:0 0 8px;}
+  .callout p{margin:0;font-size:17px;line-height:1.60;color:var(--dark-warm);}
+
+  .takeaway{margin-top:104px;padding:56px 48px;border-radius:8px;
+            background:var(--deep-dark);color:var(--parchment);}
+  .takeaway .eyebrow{color:var(--brand-light);}
+  .takeaway p{font-size:21px;line-height:1.65;color:var(--parchment);
+              margin:16px 0 0;font-weight:400;}
+  .takeaway strong{color:var(--brand-light);font-weight:500;}
+
+  .colophon{margin:72px 0 0;font-family:var(--mono);font-size:12px;
+            letter-spacing:1px;color:var(--stone);}
+
+  .toc{position:fixed;right:28px;top:50%;transform:translateY(-50%);
+       display:flex;flex-direction:column;gap:16px;z-index:10;}
+  .toc a{display:flex;align-items:center;justify-content:flex-end;text-decoration:none;}
+  .toc a span{font-family:var(--mono);font-size:12px;letter-spacing:1px;
+              color:var(--brand-ink);margin-right:12px;
+              opacity:0;transform:translateX(6px);
+              transition:opacity .18s ease,transform .18s ease;}
+  .toc a::after{content:"";display:block;width:22px;height:2px;border-radius:1px;
+                background:var(--stone);opacity:.45;
+                transition:width .18s ease,background .18s ease,opacity .18s ease;}
+  .toc a:hover span,.toc a:focus-visible span{opacity:1;transform:none;}
+  .toc a:hover::after,.toc a:focus-visible::after{width:36px;background:var(--brand-ink);opacity:1;}
+  @media (max-width:1240px){ .toc{display:none;} }
+
+  @media (max-width:680px){
+    body{font-size:17px;}
+    .wrap{padding:0 20px 100px;}
+    h1{font-size:32px;}
+    h2{font-size:24px;}
+    .hero{padding:64px 0 32px;}
+    .essence{font-size:19px;}
+    .stat b{font-size:28px;}
+    .versus{grid-template-columns:1fr;}
+    .takeaway{padding:36px 24px;}
+    td:first-child{white-space:normal;}
+  }
+  @media print{
+    body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    .wrap{max-width:100%;padding:0;}
+    figure,.stat,.vs-card,.callout,.takeaway,details{break-inside:avoid;}
+  }
+</style>
+</head>
+<body>
+<nav class="toc" aria-label="目录">
+  <a href="#p1"><span>先建立直觉</span></a>
+  <a href="#p2"><span>真实机制</span></a>
+  <a href="#p3"><span>设计权衡</span></a>
+  <a href="#p4"><span>类比失效点</span></a>
+  <a href="#takeaway"><span>一句话总结</span></a>
+</nav>
+<div class="wrap">
+
+  <header class="hero">
+    <div class="eyebrow">深入浅出 · 示例</div>
+    <h1>数据库索引：B+ 树</h1>
+    <p class="essence">索引是一棵<strong>矮而宽的平衡树</strong>：每层只存区间界，查找沿树下降，用<strong>几次定点读取</strong>代替翻遍全表。</p>
+    <div class="rule"></div>
+  </header>
+
+  <!-- 第 2 层：直觉旅程 -->
+  <section class="part" id="p1">
+    <div class="part-eyebrow">Part 1 · 先建立直觉</div>
+    <h2>图书馆是怎么让你找到一本书的</h2>
+    <p class="lede">想象一座没有目录的图书馆：一百万本书随便放。你要找其中一本，怎么办？</p>
+
+    <div class="step">
+      <figure>
+        <svg viewBox="0 0 960 280" xmlns="http://www.w3.org/2000/svg" role="img">
+          <title>逐架翻找</title>
+          <desc>一排书脊，扫描箭头从头移到目标书</desc>
+          <defs>
+            <pattern id="dots1" width="24" height="24" patternUnits="userSpaceOnUse">
+              <circle cx="1" cy="1" r="0.8" fill="#D4E7E7"/>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="#f5f4ed"/>
+          <rect width="100%" height="100%" fill="url(#dots1)" opacity="0.55"/>
+          <!-- 扫描箭头 -->
+          <path d="M108 84 L464 84" stroke="#267072" stroke-width="1.5" fill="none"/>
+          <path d="M459 79 L466 84 L459 89" fill="none" stroke="#267072"
+                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <rect x="220" y="48" width="120" height="24" rx="4" fill="#f5f4ed"/>
+          <text x="280" y="66" font-size="20" fill="#504e49" text-anchor="middle"
+                font-family="'JetBrains Mono', Consolas, monospace">从头翻起</text>
+          <!-- 书脊 -->
+          <rect x="96" y="120" width="24" height="96" fill="#E9E8E1" stroke="#6b6a64" stroke-width="1.2"/>
+          <rect x="144" y="120" width="24" height="96" fill="#E9E8E1" stroke="#6b6a64" stroke-width="1.2"/>
+          <rect x="192" y="120" width="24" height="96" fill="#E9E8E1" stroke="#6b6a64" stroke-width="1.2"/>
+          <rect x="240" y="120" width="24" height="96" fill="#E9E8E1" stroke="#6b6a64" stroke-width="1.2"/>
+          <rect x="288" y="120" width="24" height="96" fill="#E9E8E1" stroke="#6b6a64" stroke-width="1.2"/>
+          <rect x="336" y="120" width="24" height="96" fill="#E9E8E1" stroke="#6b6a64" stroke-width="1.2"/>
+          <rect x="384" y="120" width="24" height="96" fill="#78C2C4" stroke="#267072" stroke-width="1.5"/>
+          <rect x="432" y="120" width="24" height="96" fill="#E9E8E1" stroke="#6b6a64" stroke-width="1.2"/>
+          <rect x="480" y="120" width="24" height="96" fill="#E9E8E1" stroke="#6b6a64" stroke-width="1.2"/>
+          <text x="396" y="248" font-size="24" font-weight="500" fill="#141413" text-anchor="middle"
+                font-family="Charter, Georgia, 'Noto Serif SC', 'Songti SC', serif">目标</text>
+          <text x="660" y="172" font-size="24" fill="#504e49"
+                font-family="Charter, Georgia, 'Noto Serif SC', 'Songti SC', serif">平均翻 50 万册</text>
+        </svg>
+        <figcaption><span class="fig-label">图 1 ·</span>没有目录时，找书的成本随藏书量线性增长——这就是「全表扫描」。</figcaption>
+      </figure>
+      <div class="step-head">
+        <span class="step-num">01</span>
+        <span class="step-label">没有目录的时代</span>
+      </div>
+      <h3>只能一架一架翻</h3>
+      <p class="step-txt">书随便放，找哪本都得从第一个书架看到最后一个。藏书量翻倍，找书时间就翻倍，没有任何捷径。</p>
+    </div>
+
+    <div class="step">
+      <figure>
+        <svg viewBox="0 0 960 320" xmlns="http://www.w3.org/2000/svg" role="img">
+          <title>目录卡片</title>
+          <desc>三张按字母分段的目录卡片，箭头从命中的卡片指向书架</desc>
+          <defs>
+            <pattern id="dots2" width="24" height="24" patternUnits="userSpaceOnUse">
+              <circle cx="1" cy="1" r="0.8" fill="#D4E7E7"/>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="#f5f4ed"/>
+          <rect width="100%" height="100%" fill="url(#dots2)" opacity="0.55"/>
+          <!-- 目录卡片 -->
+          <rect x="120" y="44" width="160" height="64" rx="4" fill="#EAE9E2" stroke="#504e49" stroke-width="1.2"/>
+          <text x="200" y="84" font-size="26" fill="#141413" text-anchor="middle"
+                font-family="Charter, Georgia, 'Noto Serif SC', 'Songti SC', serif">A – K</text>
+          <rect x="120" y="128" width="160" height="64" rx="4" fill="#78C2C4" stroke="#267072" stroke-width="1.5"/>
+          <text x="200" y="168" font-size="26" font-weight="500" fill="#141413" text-anchor="middle"
+                font-family="Charter, Georgia, 'Noto Serif SC', 'Songti SC', serif">L – S</text>
+          <rect x="120" y="212" width="160" height="64" rx="4" fill="#EAE9E2" stroke="#504e49" stroke-width="1.2"/>
+          <text x="200" y="252" font-size="26" fill="#141413" text-anchor="middle"
+                font-family="Charter, Georgia, 'Noto Serif SC', 'Songti SC', serif">T – Z</text>
+          <!-- 连线 -->
+          <path d="M284 160 L552 160" stroke="#267072" stroke-width="1.5" fill="none"/>
+          <path d="M547 155 L554 160 L547 165" fill="none" stroke="#267072"
+                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <rect x="368" y="124" width="96" height="24" rx="4" fill="#f5f4ed"/>
+          <text x="416" y="142" font-size="20" fill="#504e49" text-anchor="middle"
+                font-family="'JetBrains Mono', Consolas, monospace">索书号</text>
+          <!-- 书架 -->
+          <rect x="556" y="96" width="160" height="128" rx="4" fill="#faf9f5" stroke="#141413" stroke-width="1.2"/>
+          <rect x="580" y="120" width="16" height="80" fill="#E9E8E1" stroke="#6b6a64" stroke-width="1"/>
+          <rect x="604" y="120" width="16" height="80" fill="#E9E8E1" stroke="#6b6a64" stroke-width="1"/>
+          <rect x="628" y="120" width="16" height="80" fill="#E9E8E1" stroke="#6b6a64" stroke-width="1"/>
+          <rect x="652" y="120" width="16" height="80" fill="#E9E8E1" stroke="#6b6a64" stroke-width="1"/>
+          <text x="636" y="256" font-size="24" fill="#504e49" text-anchor="middle"
+                font-family="Charter, Georgia, 'Noto Serif SC', 'Songti SC', serif">三楼 M 架</text>
+        </svg>
+        <figcaption><span class="fig-label">图 2 ·</span>卡片不存书，只存「哪段字母在哪个架」——索引与数据分离。</figcaption>
+      </figure>
+      <div class="step-head">
+        <span class="step-num">02</span>
+        <span class="step-label">目录卡片登场</span>
+      </div>
+      <h3>先查卡片，再直奔书架</h3>
+      <p class="step-txt">每张卡片只管一段字母区间，上面写着「L–S 的书在三楼 M 架」。你不用碰任何一本书，查卡片就能拿到位置。</p>
+    </div>
+
+    <div class="step">
+      <figure>
+        <svg viewBox="0 0 960 400" xmlns="http://www.w3.org/2000/svg" role="img">
+          <title>多级导览</title>
+          <desc>根节点分流到两个内部节点，再分流到四个叶子，标有 1-2-3 的查询顺序</desc>
+          <defs>
+            <pattern id="dots3" width="24" height="24" patternUnits="userSpaceOnUse">
+              <circle cx="1" cy="1" r="0.8" fill="#D4E7E7"/>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="#f5f4ed"/>
+          <rect width="100%" height="100%" fill="url(#dots3)" opacity="0.55"/>
+          <!-- 连线：根 → 内部 -->
+          <path d="M480 96 L480 136 L248 136 L248 156" stroke="#267072" stroke-width="1.5" fill="none"/>
+          <path d="M243 150 L248 157 L253 150" fill="none" stroke="#267072"
+                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M480 96 L480 136 L712 136 L712 156" stroke="#504e49" stroke-width="1.5" fill="none"/>
+          <path d="M707 150 L712 157 L717 150" fill="none" stroke="#504e49"
+                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- 连线：内部 → 叶子 -->
+          <path d="M248 224 L248 264 L136 264 L136 288" stroke="#504e49" stroke-width="1.5" fill="none"/>
+          <path d="M131 282 L136 289 L141 282" fill="none" stroke="#504e49"
+                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M248 224 L248 264 L344 264 L344 288" stroke="#267072" stroke-width="1.5" fill="none"/>
+          <path d="M339 282 L344 289 L349 282" fill="none" stroke="#267072"
+                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M712 224 L712 264 L568 264 L568 288" stroke="#504e49" stroke-width="1.5" fill="none"/>
+          <path d="M563 282 L568 289 L573 282" fill="none" stroke="#504e49"
+                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M712 224 L712 264 L776 264 L776 288" stroke="#504e49" stroke-width="1.5" fill="none"/>
+          <path d="M771 282 L776 289 L781 282" fill="none" stroke="#504e49"
+                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- 根节点（焦点） -->
+          <rect x="408" y="32" width="144" height="64" rx="4" fill="#78C2C4" stroke="#267072" stroke-width="1.5"/>
+          <text x="480" y="72" font-size="26" font-weight="500" fill="#141413" text-anchor="middle"
+                font-family="Charter, Georgia, 'Noto Serif SC', 'Songti SC', serif">&lt; 50 | ≥ 50</text>
+          <!-- 内部节点 -->
+          <rect x="176" y="160" width="144" height="64" rx="4" fill="#faf9f5" stroke="#141413" stroke-width="1.2"/>
+          <text x="248" y="200" font-size="26" fill="#141413" text-anchor="middle"
+                font-family="Charter, Georgia, 'Noto Serif SC', 'Songti SC', serif">20 | 35</text>
+          <rect x="640" y="160" width="144" height="64" rx="4" fill="#faf9f5" stroke="#141413" stroke-width="1.2"/>
+          <text x="712" y="200" font-size="26" fill="#141413" text-anchor="middle"
+                font-family="Charter, Georgia, 'Noto Serif SC', 'Songti SC', serif">65 | 80</text>
+          <!-- 叶子 -->
+          <rect x="64" y="292" width="144" height="64" rx="4" fill="#EAE9E2" stroke="#504e49" stroke-width="1.2"/>
+          <text x="136" y="332" font-size="26" fill="#141413" text-anchor="middle"
+                font-family="Charter, Georgia, 'Noto Serif SC', 'Songti SC', serif">1 – 19</text>
+          <rect x="272" y="292" width="144" height="64" rx="4" fill="#EAE9E2" stroke="#504e49" stroke-width="1.2"/>
+          <text x="344" y="332" font-size="26" fill="#141413" text-anchor="middle"
+                font-family="Charter, Georgia, 'Noto Serif SC', 'Songti SC', serif">20 – 34</text>
+          <rect x="496" y="292" width="144" height="64" rx="4" fill="#EAE9E2" stroke="#504e49" stroke-width="1.2"/>
+          <text x="568" y="332" font-size="26" fill="#141413" text-anchor="middle"
+                font-family="Charter, Georgia, 'Noto Serif SC', 'Songti SC', serif">35 – 64</text>
+          <rect x="704" y="292" width="144" height="64" rx="4" fill="#EAE9E2" stroke="#504e49" stroke-width="1.2"/>
+          <text x="776" y="332" font-size="26" fill="#141413" text-anchor="middle"
+                font-family="Charter, Georgia, 'Noto Serif SC', 'Songti SC', serif">65 – 99</text>
+          <!-- 序号圆点 -->
+          <circle cx="576" cy="64" r="12" fill="#267072"/>
+          <text x="576" y="69" font-size="16" font-weight="500" fill="#f5f4ed" text-anchor="middle"
+                font-family="Charter, Georgia, 'Noto Serif SC', 'Songti SC', serif">1</text>
+          <circle cx="152" cy="192" r="12" fill="#267072"/>
+          <text x="152" y="197" font-size="16" font-weight="500" fill="#f5f4ed" text-anchor="middle"
+                font-family="Charter, Georgia, 'Noto Serif SC', 'Songti SC', serif">2</text>
+          <circle cx="248" cy="324" r="12" fill="#267072"/>
+          <text x="248" y="329" font-size="16" font-weight="500" fill="#f5f4ed" text-anchor="middle"
+                font-family="Charter, Georgia, 'Noto Serif SC', 'Songti SC', serif">3</text>
+        </svg>
+        <figcaption><span class="fig-label">图 3 ·</span>查 27 的路径：根（&lt;50）→ 左支（20–35）→ 叶子。三次判断，不碰其他分支。</figcaption>
+      </figure>
+      <div class="step-head">
+        <span class="step-num">03</span>
+        <span class="step-label">导览分了好几级</span>
+      </div>
+      <h3>大厅牌 → 楼层牌 → 书架</h3>
+      <p class="step-txt">藏书太多，一层卡片装不下，于是目录也分级：大厅导览牌只说「去几楼」，楼层牌再说「去几架」，每级只做一次二选一。</p>
+    </div>
+
+    <div class="step">
+      <figure>
+        <svg viewBox="0 0 960 240" xmlns="http://www.w3.org/2000/svg" role="img">
+          <title>叶子是连起来的</title>
+          <desc>四个叶子节点横向排开，前三个之间有青瓷色加粗箭头相连，表示范围扫描</desc>
+          <defs>
+            <pattern id="dots4" width="24" height="24" patternUnits="userSpaceOnUse">
+              <circle cx="1" cy="1" r="0.8" fill="#D4E7E7"/>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="#f5f4ed"/>
+          <rect width="100%" height="100%" fill="url(#dots4)" opacity="0.55"/>
+          <!-- 范围标注 -->
+          <rect x="268" y="40" width="240" height="24" rx="4" fill="#f5f4ed"/>
+          <text x="388" y="58" font-size="20" fill="#504e49" text-anchor="middle"
+                font-family="'JetBrains Mono', Consolas, monospace">范围：顺着走，不回头</text>
+          <!-- 叶子间连线（焦点路径） -->
+          <path d="M228 128 L276 128" stroke="#78C2C4" stroke-width="2.5" fill="none"/>
+          <path d="M271 123 L278 128 L271 133" fill="none" stroke="#78C2C4"
+                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M444 128 L492 128" stroke="#78C2C4" stroke-width="2.5" fill="none"/>
+          <path d="M487 123 L494 128 L487 133" fill="none" stroke="#78C2C4"
+                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M660 128 L708 128" stroke="#504e49" stroke-width="1.5" fill="none"/>
+          <path d="M703 123 L710 128 L703 133" fill="none" stroke="#504e49"
+                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- 叶子 -->
+          <rect x="64" y="96" width="160" height="64" rx="4" fill="#EAE9E2" stroke="#504e49" stroke-width="1.2"/>
+          <text x="144" y="136" font-size="26" fill="#141413" text-anchor="middle"
+                font-family="Charter, Georgia, 'Noto Serif SC', 'Songti SC', serif">25 – 34</text>
+          <rect x="280" y="96" width="160" height="64" rx="4" fill="#EAE9E2" stroke="#504e49" stroke-width="1.2"/>
+          <text x="360" y="136" font-size="26" fill="#141413" text-anchor="middle"
+                font-family="Charter, Georgia, 'Noto Serif SC', 'Songti SC', serif">35 – 47</text>
+          <rect x="496" y="96" width="160" height="64" rx="4" fill="#EAE9E2" stroke="#504e49" stroke-width="1.2"/>
+          <text x="576" y="136" font-size="26" fill="#141413" text-anchor="middle"
+                font-family="Charter, Georgia, 'Noto Serif SC', 'Songti SC', serif">48 – 60</text>
+          <rect x="712" y="96" width="160" height="64" rx="4" fill="#EAE9E2" stroke="#504e49" stroke-width="1.2"/>
+          <text x="792" y="136" font-size="26" fill="#141413" text-anchor="middle"
+                font-family="Charter, Georgia, 'Noto Serif SC', 'Songti SC', serif">61 – 78</text>
+        </svg>
+        <figcaption><span class="fig-label">图 4 ·</span>同一楼层的书架彼此相邻——B+ 树的叶子之间有一条链表。</figcaption>
+      </figure>
+      <div class="step-head">
+        <span class="step-num">04</span>
+        <span class="step-label">书架彼此相邻</span>
+      </div>
+      <h3>要一整段？顺着架子走</h3>
+      <p class="step-txt">如果你要「25 到 60 之间的所有书」，查到起点那一架之后，直接顺着相邻的书架一路取过去，不用每本都回大厅重新查。</p>
+    </div>
+  </section>
+
+  <!-- 第 3 层：真实机制 -->
+  <section class="part" id="p2">
+    <div class="part-eyebrow">Part 2 · 拆开看真实机制</div>
+    <h2>B+ 树：每个节点是一个磁盘页，每层一次定点读取</h2>
+
+    <p>类比的图书馆到此为止。真实系统里，对应关系是这样的：</p>
+    <table>
+      <thead><tr><th>类比里的角色</th><th>真实系统里是什么</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>书名 / 索书号</td><td><span class="term">索引键</span>（key）</td><td>被索引列的值，树按它排序</td></tr>
+        <tr><td>大厅 / 楼层导览牌</td><td><span class="term">内部节点</span></td><td>只存键的分界值与子页指针，不存数据</td></tr>
+        <tr><td>书架上的书</td><td><span class="term">叶子节点</span></td><td>存键 + 行指针（或整行，取决聚簇与否）</td></tr>
+        <tr><td>相邻书架</td><td><span class="term">叶子链表</span></td><td>叶子间双向链接，范围查询顺序扫</td></tr>
+        <tr><td>一次走到书架</td><td>一次磁盘页读取</td><td>每节点 = 一个页（如 16KB），一层 = 一次 I/O</td></tr>
+      </tbody>
+    </table>
+
+    <p>查找流程：从<span class="term">根节点</span>读入内存，在页内二分找到键所属区间的<span class="term">子页指针</span>，读入下一层，如此下降，直到叶子；叶子内再二分定位键，拿到行指针。树高通常只有 3–4 层，所以任意点查询只要 3–4 次磁盘读取。范围查询先定位左端点，再沿叶子链表顺序扫描。</p>
+
+    <details>
+      <summary>再深一层：为什么 3 层就能装下一亿行</summary>
+      <div class="dbody">
+        <p>设每页 16KB，一个「键 + 指针」约 16 字节，则每个内部节点的<span class="term">扇出</span>（fan-out）约为 1000。树能索引的行数随层数指数增长：</p>
+        <pre><code>1 层（只有叶子）      ≈ 1,000 行
+2 层                  ≈ 100 万行
+3 层                  ≈ 10 亿行
+4 层                  ≈ 1 万亿行</code></pre>
+        <p>查找伪代码：</p>
+        <pre><code>lookup(key):
+    node = root
+    while node 不是叶子:
+        node = node.二分找到 key 所属区间的子页
+    return node.叶子内二分定位(key)</code></pre>
+      </div>
+    </details>
+  </section>
+
+  <!-- 第 4 层：设计权衡 -->
+  <section class="part" id="p3">
+    <div class="part-eyebrow">Part 3 · 为什么这样设计</div>
+    <h2>磁盘 I/O 是唯一要省的东西</h2>
+
+    <div class="stats">
+      <div class="stat"><b>3–4 次</b><span>B+ 树点查的磁盘读取次数</span></div>
+      <div class="stat"><b>100 万次</b><span>全表扫描同一张表的读取量</span></div>
+      <div class="stat"><b>≈1000</b><span>单个 16KB 页的扇出（叉数）</span></div>
+    </div>
+
+    <p>磁盘比内存慢约十万倍，所以数据库结构的第一原则是「把树压矮」：扇出越大，层数越少，I/O 越少。二叉树在内存里是好结构，放到磁盘上就是灾难——B+ 树把每个节点撑到一整页，用一次读取换上千路分流。</p>
+
+    <div class="versus">
+      <div class="vs-card gain">
+        <span class="vs-label">得到</span>
+        <p>点查询从 O(n) 降到 O(log n)；范围查询沿叶子链表顺序扫，磁盘预读友好。</p>
+      </div>
+      <div class="vs-card cost">
+        <span class="vs-label">代价</span>
+        <p>每次写入都要同步维护索引：页满了要分裂，删除可能合并，<span class="alert">随机写放大</span>。</p>
+      </div>
+    </div>
+
+    <blockquote>索引的本质，是用<strong>写入时的一点维护成本</strong>，预付读取时的全部检索成本。</blockquote>
+  </section>
+
+  <!-- 第 5 层：失效点 & 误解 -->
+  <section class="part" id="p4">
+    <div class="part-eyebrow">Part 4 · 这个类比在哪里失效</div>
+    <h2>图书馆的比喻有三处接不上</h2>
+    <div class="callout">
+      <span class="callout-label">误解 1</span>
+      <h3>「查索引也要从头翻目录」</h3>
+      <p>真实的树每层只存区间界，页内二分、层间跳转，查找是对数级下降，不是线性翻卡片。之所以会这么想，是因为卡片柜在记忆里本身就是一个要顺序翻的抽屉。</p>
+    </div>
+    <div class="callout">
+      <span class="callout-label">误解 2</span>
+      <h3>「索引越多越好，每列都建一个」</h3>
+      <p>每个索引都是一棵独立维护的树：插入、更新、删除都要逐树同步。写多的表上乱加索引，<span class="alert">写入会成倍变慢</span>。类比里没有「改一本书要改 N 个卡片柜」的成本。</p>
+    </div>
+    <div class="callout">
+      <span class="callout-label">误解 3</span>
+      <h3>「叶子存的就是整行数据」</h3>
+      <p>只有聚簇索引（如 InnoDB 主键）的叶子存整行；二级索引叶子只存「键 + 主键值」，查到后还要回表再查一次。类比里「卡片直接告诉你书的内容」在这里不成立。</p>
+    </div>
+  </section>
+
+  <div class="takeaway" id="takeaway">
+    <div class="eyebrow">一句话总结</div>
+    <p>B+ 树索引用一棵<strong>矮而宽的平衡树</strong>，把磁盘读取从「翻遍全表」压成「<strong>3–4 次定点寻址</strong>」，代价是写入时同步维护这棵树。</p>
+  </div>
+
+  <div class="colophon">2026-09-04 · Generated by diso</div>
+
+</div>
+</body>
+</html>
