@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="{{lang}}" data-mode="{{mode}}">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{title}} · diso</title>
+<style>
+  :root{
+    --brand:#78C2C4; --brand-ink:#267072; --brand-light:#9AD8DA;
+    --accent:#C47A78; --accent-ink:#8C4644; --accent-light:#D89D9B; --accent-tint:#F4E8E7;
+    --parchment:#f5f4ed; --ivory:#faf9f5; --inline-code-bg:#f0eee6; --warm-sand:#e8e6dc;
+    --dark-surface:#30302e; --deep-dark:#1B2E2E;
+    --near-black:#141413; --dark-warm:#3d3d3a; --olive:#504e49; --stone:#6b6a64;
+    --border:#e8e6dc; --border-soft:#e5e3d8;
+    --tag-bg:#DDEFEF; --brand-tint:#E9F4F4; --selection-bg:#CDE9E9;
+    --serif: Charter, "Bitstream Charter", Georgia,
+             "TsangerJinKai02", "Source Han Serif SC", "Noto Serif SC",
+             "Source Han Serif CN", "Noto Serif CJK SC", "思源宋体",
+             "Songti SC", "STSong", SimSun, "宋体", serif;
+    --sans: var(--serif);
+    --mono: "JetBrains Mono", "SF Mono", "Cascadia Code", "Fira Code",
+            Consolas, Monaco, "Courier New",
+            "TsangerJinKai02", "Noto Serif SC", Georgia, serif;
+  }
+  *{box-sizing:border-box;}
+  html{background:var(--parchment);scroll-behavior:smooth;}
+  section.part,.takeaway{scroll-margin-top:32px;} /* breathing room after anchor jumps */
+  body{margin:0;background:var(--parchment);color:var(--near-black);
+       font-family:var(--serif);font-weight:400;
+       font-size:18px;line-height:1.65;letter-spacing:0;
+       font-kerning:normal;text-rendering:optimizeLegibility;
+       hanging-punctuation:first allow-end;
+       font-synthesis:none;-webkit-font-smoothing:antialiased;}
+  ::selection{background:var(--selection-bg);color:var(--near-black);}
+  .wrap{max-width:760px;margin:0 auto;padding:0 32px 120px;}
+  p,li,.essence{text-align:start;}
+  html:lang(zh) body{letter-spacing:0.3px;}
+  html:lang(zh) p,html:lang(zh) li,html:lang(zh) .essence{
+    text-align:justify;text-justify:inter-ideograph;}
+
+  /* ---------- Hero ---------- */
+  .hero{padding:112px 0 44px;}
+  .eyebrow{font-family:var(--mono);font-size:12px;font-weight:500;
+           letter-spacing:2px;text-transform:uppercase;color:var(--stone);}
+  h1{font-size:48px;font-weight:500;line-height:1.18;letter-spacing:0.5px;
+     margin:20px 0 24px;color:var(--near-black);}
+  .essence{font-size:22px;line-height:1.60;font-weight:400;color:var(--dark-warm);
+           margin:0;max-width:640px;}
+  .essence strong{color:var(--brand-ink);font-weight:500;}
+  .rule{position:relative;height:1px;background:var(--border);border:0;margin:44px 0 0;}
+  .rule::before{content:"";position:absolute;left:0;top:-1px;width:72px;height:3px;
+                background:var(--brand);border-radius:2px;} /* the page's only decoration */
+
+  /* ---------- Sections ---------- */
+  section.part{margin-top:96px;}
+  .part-eyebrow{font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:2px;
+                text-transform:uppercase;color:var(--brand-ink);margin-bottom:16px;}
+  h2{font-size:30px;font-weight:500;line-height:1.25;letter-spacing:0.3px;
+     margin:0 0 24px;color:var(--near-black);}
+  .lede{font-size:20px;line-height:1.60;color:var(--olive);margin:0 0 44px;max-width:620px;}
+  h3{font-size:21px;font-weight:500;line-height:1.30;margin:0 0 10px;color:var(--near-black);}
+  p{margin:0 0 20px;}
+  ul{padding-left:24px;margin:0 0 20px;}
+  li{margin:0 0 8px;}
+  ul li::marker{color:var(--brand-ink);}
+
+  /* ---------- Intuition steps (large numeral + mono tag) ---------- */
+  .step{margin:0 0 72px;}
+  .step:last-child{margin-bottom:0;}
+  figure{margin:0 0 22px;}
+  figure svg{display:block;width:100%;height:auto;border-radius:8px;}
+  figcaption{font-size:15px;line-height:1.50;color:var(--olive);margin-top:12px;}
+  .fig-label{font-family:var(--mono);font-size:12px;font-weight:500;
+             letter-spacing:1px;color:var(--brand-ink);margin-right:8px;}
+  .step-head{display:flex;align-items:baseline;gap:16px;margin:0 0 10px;}
+  .step-num{font-size:30px;font-weight:400;line-height:1;color:var(--brand-ink);
+            font-variant-numeric:lining-nums tabular-nums;}
+  .step-label{font-family:var(--mono);font-size:12px;font-weight:500;
+              letter-spacing:2px;color:var(--brand-ink);}
+  .step-txt{font-size:19px;line-height:1.65;color:var(--near-black);}
+
+  /* ---------- Generic lifted container (elevation by fill, never stroke) ---------- */
+  .card{background:var(--ivory);border-radius:8px;padding:22px 26px;margin:24px 0;}
+  .card p:last-child{margin-bottom:0;}
+
+  /* ---------- Stats ---------- */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+         gap:16px;margin:28px 0;}
+  .stat{background:var(--ivory);border-radius:8px;padding:20px 24px;}
+  .stat b{display:block;font-size:34px;font-weight:500;line-height:1.1;
+          color:var(--brand-ink);font-variant-numeric:lining-nums tabular-nums;}
+  .stat span{display:block;font-size:14px;line-height:1.50;color:var(--olive);margin-top:8px;}
+
+  /* ---------- Versus (paired trade-off cards) ---------- */
+  .versus{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:24px 0;}
+  .vs-card{background:var(--ivory);border-radius:8px;padding:22px 26px;}
+  .vs-label{font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:2px;
+            text-transform:uppercase;display:block;margin-bottom:10px;}
+  .vs-card.gain .vs-label{color:var(--brand-ink);}
+  .vs-card.cost .vs-label{color:var(--accent-ink);}
+  .vs-card p{margin:0;font-size:17px;line-height:1.60;color:var(--dark-warm);}
+
+  /* ---------- Blockquote ---------- */
+  blockquote{margin:28px 0;padding:0;font-size:20px;line-height:1.60;color:var(--dark-warm);}
+  blockquote strong{color:var(--brand-ink);font-weight:500;}
+
+  /* ---------- Tables ---------- */
+  table{width:100%;border-collapse:collapse;font-size:17px;margin:24px 0;}
+  th{text-align:left;font-weight:500;color:var(--dark-warm);
+     padding:9px 12px;border-bottom:0.6px solid var(--border);}
+  td{padding:8px 12px;border-bottom:0.25px solid var(--border);
+     vertical-align:top;color:var(--near-black);}
+  td:first-child{color:var(--near-black);font-weight:500;white-space:nowrap;}
+  tr:last-child td{border-bottom:none;}
+  .num{font-variant-numeric:lining-nums tabular-nums;color:var(--brand-ink);font-weight:500;}
+
+  /* ---------- Inline ---------- */
+  .term{color:var(--brand-ink);font-weight:500;}      /* no background block */
+  .alert{color:var(--accent-ink);font-weight:500;}    /* cost/risk/failure, max one per sentence */
+  strong,b{font-weight:500;}
+  code{font-family:var(--mono);background:var(--inline-code-bg);color:var(--dark-warm);
+       padding:1px 5px;border-radius:3px;font-size:0.88em;}
+  pre{background:var(--ivory);border-radius:8px;padding:16px 20px;margin:20px 0;
+      font-family:var(--mono);font-size:15px;line-height:1.55;
+      color:var(--near-black);overflow-x:auto;}
+  pre code{background:none;padding:0;font-size:inherit;color:inherit;}
+
+  /* ---------- Diff (before → after; add = celadon, del = terracotta) ---------- */
+  .diff{background:var(--ivory);border-radius:8px;padding:14px 18px;margin:20px 0;
+        font-family:var(--mono);font-size:15px;line-height:1.60;overflow-x:auto;}
+  .diff .hunk{color:var(--stone);display:block;}
+  .diff .ctx{color:var(--dark-warm);display:block;}
+  .diff .add{color:var(--brand-ink);display:block;}
+  .diff .del{color:var(--accent-ink);display:block;}
+
+  /* ---------- Collapsible deep-dive ---------- */
+  details{background:var(--ivory);border-radius:8px;padding:0;margin:24px 0;}
+  summary{cursor:pointer;padding:16px 22px;font-size:18px;font-weight:500;
+          color:var(--brand-ink);list-style:none;user-select:none;letter-spacing:0.3px;}
+  summary::-webkit-details-marker{display:none;}
+  summary::before{content:"+ ";font-family:var(--mono);}
+  details[open] summary::before{content:"\2212  ";}
+  summary:focus-visible{outline:2px solid var(--brand-ink);outline-offset:2px;border-radius:4px;}
+  .dbody{padding:0 22px 20px;font-size:17px;line-height:1.60;color:var(--dark-warm);}
+  .dbody p:last-child{margin-bottom:0;}
+
+  /* ---------- Misconception callout: terracotta wash, warning semantics ---------- */
+  .callout{background:var(--accent-tint);border-radius:8px;padding:22px 26px;margin:0 0 16px;}
+  .callout-label{font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:2px;
+                 text-transform:uppercase;color:var(--accent-ink);display:block;margin-bottom:10px;}
+  .callout h3{font-size:19px;margin:0 0 8px;}
+  .callout p{margin:0;font-size:17px;line-height:1.60;color:var(--dark-warm);}
+
+  /* ---------- Closing: block-level light/dark alternation ---------- */
+  .takeaway{margin-top:104px;padding:56px 48px;border-radius:8px;
+            background:var(--deep-dark);color:var(--parchment);}
+  .takeaway .eyebrow{color:var(--brand-light);}
+  .takeaway p{font-size:21px;line-height:1.65;color:var(--parchment);
+              margin:16px 0 0;font-weight:400;}
+  .takeaway strong{color:var(--brand-light);font-weight:500;}
+
+  /* ---------- Source citations ---------- */
+  a{color:var(--brand-ink);text-underline-offset:3px;}
+  a:focus-visible{outline:2px solid var(--brand-ink);outline-offset:3px;}
+  .sources li{font-size:15px;overflow-wrap:anywhere;}
+
+  /* ---------- Colophon ---------- */
+  .colophon{margin:72px 0 0;font-family:var(--mono);font-size:12px;
+            letter-spacing:1px;color:var(--stone);}
+
+  /* ---------- Right-edge line TOC: pure CSS, hover reveals the label ---------- */
+  .toc{position:fixed;right:28px;top:50%;transform:translateY(-50%);
+       display:flex;flex-direction:column;gap:16px;z-index:10;}
+  .toc a{display:flex;align-items:center;justify-content:flex-end;text-decoration:none;}
+  .toc a span{font-family:var(--mono);font-size:12px;letter-spacing:1px;
+              color:var(--brand-ink);margin-right:12px;
+              opacity:0;transform:translateX(6px);
+              transition:opacity .18s ease,transform .18s ease;}
+  .toc a::after{content:"";display:block;width:22px;height:2px;border-radius:1px;
+                background:var(--stone);opacity:.45;
+                transition:width .18s ease,background .18s ease,opacity .18s ease;}
+  .toc a:hover span,.toc a:focus-visible span{opacity:1;transform:none;}
+  .toc a:hover::after,.toc a:focus-visible::after{width:36px;background:var(--brand-ink);opacity:1;}
+  @media (max-width:1240px){ .toc{display:none;} } /* narrow screens: never fight the column */
+
+  @media (max-width:680px){
+    body{font-size:17px;}
+    .wrap{padding:0 20px 100px;}
+    h1{font-size:32px;}
+    h2{font-size:24px;}
+    .hero{padding:64px 0 32px;}
+    .essence{font-size:19px;}
+    .stat b{font-size:28px;}
+    .versus{grid-template-columns:1fr;}
+    .takeaway{padding:36px 24px;}
+    td:first-child{white-space:normal;}
+  }
+  @media print{
+    .toc{display:none;}
+    body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    .wrap{max-width:100%;padding:0;}
+    h1,h2,h3,.part-eyebrow,.step-head{break-after:avoid;}
+    p{orphans:3;widows:3;}
+    .sources li{break-inside:avoid;}
+    figure,.stat,.vs-card,.callout,.takeaway,details,.diff,.card{break-inside:avoid;}
+    details:not([open]) .dbody{display:block;} /* expand deep-dives when printing */
+  }
+</style>
+</head>
+<body>
+<nav class="toc" aria-label="{{contents_label}}">
+{{toc}}
+</nav>
+<main class="wrap">
+{{content}}
+</main>
+</body>
+</html>

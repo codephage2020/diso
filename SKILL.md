@@ -1,6 +1,6 @@
 ---
 name: diso
-description: Explain any topic plainly without dumbing it down — an intuition layer plus a real-mechanism layer, delivered as one self-contained HTML page with hand-drawn SVG diagrams. Use for /diso <topic>, or when the user wants something explained 深入浅出 / 讲清楚 / 讲透 / 科普, asks for an explainer, a primer, an ELI5 that is still rigorous, or says they want to actually understand how something works rather than get a summary.
+description: Create a self-contained HTML explainer with an analogy, its mapping to the real mechanism, its limits, source citations, and inline SVG diagrams. Use for /diso followed by a topic, or requests for an illustrated HTML explainer. Ordinary conversational explanations do not need this skill.
 ---
 
 # diso — plain, not shallow
@@ -16,7 +16,7 @@ Topic: $ARGUMENTS — or, if that is empty, whatever the user asked to have expl
 1. **Every analogy ships with a mapping** — a table mapping each analogy role to the real component it stands for.
 2. **Every analogy ships with its failure points** — state where it stops holding.
 3. **Never avoid real terminology** — define on first use, then keep using the real term. One concept gets exactly one name across the whole page: never alternate between the analogy name and the real name for the same thing.
-4. **Never trust parametric memory for facts.** Every number, date, version, standard clause, or named source must be verified against a source before it lands on the page; what cannot be verified is dropped or explicitly marked as approximate. One invented "oh, I see" figure destroys the page's credibility.
+4. **Never trust parametric memory for facts.** Every factual number, date, version, standard clause or named source must be verified before it lands on the page. Drop unverifiable claims; label teaching assumptions and estimates derived from them explicitly. One invented "oh, I see" figure destroys the page's credibility.
 
 Tone: adult to adult. The reader is smart, just lacks background. Banned: baby talk, mascots, coaxing exclamations, emoji as punctuation. **What drops is the barrier to entry, not the information density.**
 
@@ -24,9 +24,11 @@ Tone: adult to adult. The reader is smart, just lacks background. Banned: baby t
 
 | Flag | Mode | Layers |
 |---|---|---|
-| `--kid` | intuition only | 1–2 |
-| (default) | standard | 1–4 |
-| `--deep` | deep dive | 1–5 + formal description (formula / pseudocode / data structure), order-of-magnitude estimates, boundary conditions; may close with a **cheat sheet** |
+| `--kid` | concise intuition | 1–2 + compact mapping and real mechanism + one plain-language analogy limit |
+| (default) | standard | All five layers, including analogy limits |
+| `--deep` | deep dive | Standard + formal description (formula / pseudocode / data structure), explicit assumptions and boundary conditions; optional **cheat sheet** |
+
+Every mode includes sources and a mechanism-based takeaway. `--kid` changes depth, not the adult tone. The builder selects the sections and TOC; never manually hide deep content with CSS.
 
 ## 3. Choosing the analogy (do this before writing anything)
 
@@ -43,13 +45,13 @@ Generate two or three candidates, test each against the bottleneck, then commit 
 
 **Layer 1 — one-sentence essence**: holds with zero background, ≤ 30 characters (Chinese) / ≤ 20 words (English), states the working mechanism, no metaphor.
 
-**Layer 2 — intuition journey (4–6 steps)**: one analogy carried start to finish, telling "how people managed before it existed → what happened, step by step". Each step gets a large SVG + 1–2 sentences.
+**Layer 2 — intuition journey (4–6 steps)**: one analogy carried start to finish, telling "how people managed before it existed → what happened, step by step". Each step gets 1–2 sentences; add an SVG when it communicates a relationship the prose cannot. Keep at least one substantive figure in the journey.
 
 **Layer 3 — the real mechanism**: first the analogy→component mapping table, then the real flow with real terms and structures. Target: the reader can retell "what goes in → what happens inside → what comes out".
 
 **Layer 4 — why designed this way**: a trade-off table (gained / cost) plus at least one "oh, I see" moment: a counterintuitive fact, an order-of-magnitude gap, or a deliberate sacrifice. When the story is an evolution (old design → new design), show it as a diff block — before/after with `+` / `-` lines — instead of versus cards.
 
-**Layer 5 — where the analogy breaks & misconceptions** (skip in `--kid`): ~3 items, each: the misconception → the truth → why people think this way.
+**Layer 5 — where the analogy breaks & misconceptions**: ~3 items, each: the misconception → the truth → why people think this way. In `--kid`, keep one specific limit in plain language instead.
 
 **Smallest-view test**: every block earns its size. If a sentence or a small table makes the point, do not inflate it into a stats row, a versus pair, or a full-width SVG. A step whose figure would only re-draw the sentence above it keeps the sentence and drops the figure.
 
@@ -59,38 +61,44 @@ Generate two or three candidates, test each against the bottleneck, then commit 
 
 ## 5. HTML output
 
-Build the page on `references/output-template.md` — it holds the complete stylesheet and the ready-made diagram snippets, and it is the **only** place CSS should be copied from. `references/design-tokens.md` is the law behind it: read it for which class to reach for, the palette semantics, and the SVG rules, which no stylesheet can express. The reference files are written in English; **every visible string in the produced HTML must be localized to the request language** using the string map at the bottom of `output-template.md`.
+Use `scripts/build.py` to assemble content into `assets/base.html`. That asset is the only stylesheet and document shell; do not copy or edit CSS in generated pages. Read `references/output-template.md` for the JSON schema, localization and SVG snippets, and `references/design-tokens.md` for visual semantics.
 
-Produce **one self-contained HTML file**: inline SVG, no external links, no CDN, no JS, no build step, opens on double-click. The page must read as typeset paper, not a dashboard.
+The delivered HTML is self-contained: inline SVG, no external dependencies, CDN, JavaScript or runtime build step. It opens on double-click. Passive HTTP(S) citation links are allowed; fetching images, fonts, stylesheets or embedded documents is not. Use the bundled classes; inline styles and extra stylesheets are rejected. Write SVG presentation attributes explicitly, not CSS variables or transforms.
 
-The visual system in one breath: parchment `#f5f4ed` canvas, never pure white; two accent hues with divided semantics — celadon owns focus and the positive, terracotta owns cost and failure; one serif family at weights 400/500; flat surfaces, elevation by fill; a line must separate regions, encode state, or carry a data relationship, otherwise delete it.
+The visual system: parchment `#f5f4ed`, celadon for focus and gains, terracotta for cost and failure, serif weights 400/500, flat surfaces and orthogonal diagrams. The page should read as typeset paper.
 
 ## 6. Workflow
 
-1. **Parse** `$ARGUMENTS` for the topic and any `--kid` / `--deep` flag. No topic → ask; never generate from nothing. Unsure of depth → standard mode, and close by offering to go deeper or simpler.
-2. **Verify the facts first.** List the numbers, dates, versions, and named sources the page will assert, then check them against real sources before writing. This is §1.4 as a procedure, not a wish — do it here, while the page is still cheap to change. Anything unverifiable is dropped or marked approximate.
-3. **Choose the analogy** by §3, and sketch the mapping table. If the mapping is thin, the analogy is wrong — go back.
-4. **Outline all five layers** as one-liners, including which blocks each layer needs. Apply the smallest-view test to the outline, before the blocks exist.
-5. **Read `design-tokens.md` and `output-template.md`**, then generate `diso-<topic-slug>.html` into the current workspace. Language matches the request: Chinese in, Chinese out; English likewise.
-6. **Validate**, then fix everything the run reports:
+1. **Parse** `$ARGUMENTS` for the topic and `--kid` / `--deep`. No topic → ask. No flag → standard. Do not pass the raw topic or arguments to a shell.
+2. **Verify facts.** Check numbers, dates, versions and named sources before writing. Keep a source list with the claim each source supports. Mark teaching assumptions and derived estimates explicitly. Drop unsupported factual claims; do not turn them into “approximate” facts.
+3. **Choose the analogy** by §3 and sketch its mapping. If the mapping is thin, choose another.
+4. **Outline the requested depth**, retaining a real mechanism and an analogy limit in every mode. Apply the smallest-view test before generating figures.
+5. **Read the authoring and design references**, then write `diso-<topic-slug>.json` in the current workspace. Use a simple filename slug. Plain string fields are escaped by the builder; only fields ending in `_html` and `svg` are markup. Escape code examples inside those markup fields. Localize visible copy and SVG text to the request language.
+6. **Build and validate from the current workspace**, using the installed skill's absolute path:
 
 ```bash
-python3 scripts/check.py diso-<topic-slug>.html
+python3 "${CLAUDE_SKILL_DIR}/scripts/build.py" \
+  "diso-<topic-slug>.json" -o "diso-<topic-slug>.html"
+python3 "${CLAUDE_SKILL_DIR}/scripts/check.py" "diso-<topic-slug>.html"
 ```
 
-7. **Read the judgment checklist in §7** — the half no script can see — and fix what fails.
+Claude Code substitutes `${CLAUDE_SKILL_DIR}` in this skill body; it is not a shell environment variable you should assume exists in other agents. In another host, resolve the directory containing the loaded `SKILL.md` and substitute that absolute directory in both commands. Keep input/output paths in the user's workspace. The scripts resolve their own assets relative to `__file__`, so installation location and shell working directory can differ.
+
+Python 3.10+ is required; there are no third-party dependencies. The JSON `mode` defaults to `standard`; use `kid` or `deep` when requested. A build with any error or warning fails before writing the output. Fix every finding and rebuild; never bypass validation or replace the trusted stylesheet to make a generated page pass.
+7. **Review §7** and inspect the rendered page when a renderer is available. The validator cannot judge factual support, readability, clipping in every font, or whether an arrow conveys the right relationship.
 
 ## 7. Quality checklist
 
-`scripts/check.py` mechanically enforces the visual contract: self-containment, the closed palette, banned CSS, wash-vs-ink density, orthogonal edges, the 4px grid, focus/warning node budgets, resolvable TOC anchors, step-numeral scarcity, print styles. Run it; a clean exit means the *rendering* rules hold.
+`scripts/check.py` checks the supported HTML/SVG vocabulary, exact bundled CSS, resource attributes, palette, orthogonal geometry, marked/rounded node sizes, rectangle/edge grid, accent budgets, accessibility text, TOC and depth structure. Exit 0 means no mechanical findings, not proof of safety or visual correctness. It is a format validator, not a sanitizer for arbitrary untrusted HTML.
 
 It cannot see whether the page is any good. Check these yourself:
 
-- [ ] Delete every analogy in your head — does the remaining substance still teach the mechanism? It must be more than half the page.
-- [ ] Every number, date, and named source actually verified in step 2 — not recalled.
+- [ ] Delete every analogy in your head — does the remaining substance still teach the mechanism? In standard/deep mode, it must be more than half the substance; in kid mode the compact real mechanism must still stand alone.
+- [ ] Every factual number, date and named source was verified in step 2. The sources section identifies supporting claims; numerical teaching assumptions are labeled.
+- [ ] Diagram ranges, labels, arrow endpoints and the prose agree; check these visually.
 - [ ] One concept = one name throughout. No sentence alternates between the analogy's word and the real term.
 - [ ] The analogy's failure points are written down, and they are specific to this analogy.
-- [ ] At least one genuine "oh, I see" moment — and it is true, not just surprising.
+- [ ] In standard/deep mode, at least one genuine "oh, I see" moment — true, not just surprising.
 - [ ] Smallest-view test: no block is larger than its point requires. Every figure adds something its caption doesn't.
 - [ ] Captions add a fact rather than restating the prose.
 - [ ] Tone is colleague-to-colleague throughout — no baby talk, no cheerleading.
@@ -98,9 +106,12 @@ It cannot see whether the page is any good. Check these yourself:
 
 ## Reference files
 
-| File | When to read |
+| File | When to use |
 |---|---|
-| `references/design-tokens.md` | Before generating. Palette semantics, component rules of use, SVG rules and bans |
-| `references/output-template.md` | At generation time. The complete stylesheet, HTML skeleton, diagram snippets, string map |
-| `scripts/check.py` | After generating. `python3 scripts/check.py <file>` — exit 0 means the visual contract holds |
-| `examples/diso-btree-index.html` | Optional. A finished page (B-tree indexes) showing how the rules combine; it passes `check.py` clean |
+| `references/design-tokens.md` | Before generating: palette semantics, component use and SVG rules |
+| `references/output-template.md` | When authoring JSON: schema, mode fields, localization and diagram snippets |
+| `assets/base.html` | Builder-owned stylesheet and shell; no need to copy it into model context |
+| `scripts/build.py` | Assemble and strictly validate a page from JSON |
+| `scripts/check.py` | Validate the final HTML; any finding returns nonzero |
+| `examples/btree-index.json` | A complete, reproducible input supporting all three modes |
+| `examples/diso-btree-index.html` | Finished standard-mode example |

@@ -1,0 +1,24 @@
+name: Validate skill and examples
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ['3.10', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m unittest discover -s tests -v
+      - name: Validate the committed example
+        run: python scripts/check.py examples/diso-btree-index.html
+      - name: Rebuild the example without modifying tracked files
+        run: |
+          python scripts/build.py examples/btree-index.json -o "$RUNNER_TEMP/btree.html"
+          diff -u examples/diso-btree-index.html "$RUNNER_TEMP/btree.html"
