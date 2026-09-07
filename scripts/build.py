@@ -126,10 +126,11 @@ def render(data, mode=None):
 
     if mode != "kid":
         section("p3", string(data.get("tradeoffs_html"), "tradeoffs_html"))
+        reason_sep = "：" if language == "zh" else ": "
         boundaries = []
         for i, item in enumerate(list_field(data, "misconceptions"), 1):
             object_fields(item, {"belief", "truth", "reason"}, "misconception")
-            boundaries.append(f'<div class="callout"><span class="callout-label">{labels["misconception"]} {i}</span><h3>{text_field(item, "belief")}</h3><p>{text_field(item, "truth")} {labels["reason"]}：{text_field(item, "reason")}</p></div>')
+            boundaries.append(f'<div class="callout"><span class="callout-label">{labels["misconception"]} {i}</span><h3>{text_field(item, "belief")}</h3><p>{text_field(item, "truth")} {labels["reason"]}{reason_sep}{text_field(item, "reason")}</p></div>')
         section("p4", "\n".join(boundaries))
     else:
         section("p4", f'<div class="callout"><p>{text_field(data, "kid_boundary")}</p></div>')

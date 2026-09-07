@@ -4,6 +4,8 @@
   {"name":"citation", "valid":true, "html":"<a href='https://example.org/paper?q=one&amp;lang=en'>Source</a>"},
   {"name":"local anchor", "valid":true, "html":"<a href='#p2'>Mechanism</a>"},
   {"name":"inert comment", "valid":true, "html":"<!-- example: <script> and box-shadow are mentioned here -->"},
+  {"name":"abrupt comment close smuggles script", "valid":false, "html":"<!---><script>alert(1)</script><!-->"},
+  {"name":"abrupt comment close smuggles external asset", "valid":false, "html":"<!---><img alt='diagram' src='https://example.org/x.png'><!-->"},
   {"name":"script", "valid":false, "html":"<script>alert(1)</script>"},
   {"name":"uppercase script", "valid":false, "html":"<SCRIPT SRC='a.js'></SCRIPT>"},
   {"name":"review onerror bypass", "valid":false, "html":"<img src='diagram.png' onerror='alert(1)'>"},

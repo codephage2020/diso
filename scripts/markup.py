@@ -133,7 +133,10 @@ class Document(HTMLParser):
         self.result.error(self.getpos()[0], "processing instructions are unsupported")
 
     def handle_comment(self, data):
-        if "--" in data or data.startswith(">") or data.endswith("<!-"):
+        # Browsers also close comments abruptly at <!--> and <!--->, while
+        # HTMLParser keeps scanning to the next -->. Reject both early-close
+        # shapes so markup after them cannot hide inside a "comment".
+        if "--" in data or data.startswith((">", "-")) or data.endswith("<!-"):
             self.result.error(self.getpos()[0], "malformed HTML comment")
 
 

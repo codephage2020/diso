@@ -113,6 +113,15 @@ class PipelineTests(unittest.TestCase):
             with self.subTest(d):
                 self.assertClean(self.inject_svg(f'<path d="{d}" fill="none" stroke="#141413" stroke-linecap="round" stroke-linejoin="round"/>'))
 
+    def test_edge_paint_case_and_degenerate_segments(self):
+        self.assertRejected(self.inject_svg('<path d="M0 0 H40" stroke="#C47A78" stroke-width="2.5" fill="none"/>'), "wash strokes")
+        self.assertClean(self.inject_svg('<path d="M0 0 H40" stroke="#141413" fill="NONE"/>'))
+        self.assertRejected(self.inject_svg('<path d="M0 0 Z" stroke="#141413" fill="none"/>'), "no visible segment")
+        self.assertRejected(self.inject_svg('<line x1="0" y1="0" x2="0" y2="0" stroke="#141413"/>'), "no visible segment")
+
+    def test_chevron_allows_float_noise_at_off_grid_origins(self):
+        self.assertClean(self.inject_svg('<path d="M0.2 0 L5.2 7 L10.2 0" fill="none" stroke="#141413" stroke-linecap="round" stroke-linejoin="round"/>'))
+
     def test_grid_and_node_sizes(self):
         self.assertClean(self.inject_svg('<rect x="4" y="4" width="160" height="64" rx="4" fill="#faf9f5" stroke="#141413"/>'))
         for attrs in ('x="4.5" y="4" width="160" height="64"', 'x="4" y="4" width="200" height="64"',
@@ -163,6 +172,7 @@ class PipelineTests(unittest.TestCase):
         data["lang"] = "en"
         self.assertClean(render(data))
         self.assertIn('aria-label="Contents"', render(data))
+        self.assertIn("Why this seems plausible: ", render(data))
         data["lang"] = "ja"
         with self.assertRaises(ValueError):
             render(data)

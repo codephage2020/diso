@@ -101,8 +101,12 @@ def chevron(points):
     if len(points) != 3:
         return False
     (x1, y1), (x2, y2), (x3, y3) = points
-    vertical = y1 == y3 and x2 == (x1 + x3) / 2 and abs(x3 - x1) == 10 and abs(y2 - y1) == 7
-    horizontal = x1 == x3 and y2 == (y1 + y3) / 2 and abs(y3 - y1) == 10 and abs(x2 - x1) == 7
+
+    def close(a, b):
+        return math.isclose(a, b, rel_tol=0, abs_tol=1e-9)
+
+    vertical = close(y1, y3) and close(x2, (x1 + x3) / 2) and close(abs(x3 - x1), 10) and close(abs(y2 - y1), 7)
+    horizontal = close(x1, x3) and close(y2, (y1 + y3) / 2) and close(abs(y3 - y1), 10) and close(abs(x2 - x1), 7)
     return vertical or horizontal
 
 
@@ -121,7 +125,9 @@ def check_edges(node, result):
     else:
         paths = [[(number(node.attrs.get("x1", "0")), number(node.attrs.get("y1", "0"))),
                   (number(node.attrs.get("x2", "0")), number(node.attrs.get("y2", "0")))]]
-    if node.inherited("fill", "none" if node.tag == "line" else "") != "none":
+    if all(a == b for points in paths for a, b in zip(points, points[1:])):
+        raise ValueError("SVG edge has no visible segment")
+    if node.inherited("fill", "none" if node.tag == "line" else "").lower() != "none":
         result.error(node.line, "edges and chevrons need fill=\"none\"")
     if len(paths) == 1 and chevron(paths[0]):
         if node.inherited("stroke-linecap") != "round" or node.inherited("stroke-linejoin") != "round":
@@ -174,8 +180,8 @@ def check_svgs(nodes, ids, result):
                     result.error(node.line, "explicit or inherited fill is required (browser black is outside the palette)")
                 if node.tag in {"text", "tspan"} and fill in WASH:
                     result.error(node.line, "wash as text fill is illegible; use the ink color")
-                if stroke in WASH and node.tag not in {"svg", "g"} and (node.tag not in {"path", "line", "polyline"} or number(node.inherited("stroke-width", "1")) != 2.5):
-                    result.error(node.line, "wash strokes are only allowed on a 2.5px focus path")
+                if stroke in WASH and node.tag not in {"svg", "g"} and not (stroke == "#78c2c4" and node.tag in {"path", "line", "polyline"} and number(node.inherited("stroke-width", "1")) == 2.5):
+                    result.error(node.line, "wash strokes are only allowed as the 2.5px celadon focus path")
                 if node.tag in {"rect", "circle", "text", "tspan", "path", "line", "polyline"}:
                     if {fill, stroke} & CELADON:
                         hues.add("celadon")
