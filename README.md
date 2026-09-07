@@ -32,11 +32,11 @@ Project-scoped instead of personal: clone into `.claude/skills/diso` inside the 
 
 | Flag | Mode | What you get |
 |---|---|---|
-| `--kid` | intuition only | the journey and the pictures, layers 1–2 |
-| *(none)* | standard | layers 1–4 — intuition, mechanism, trade-offs |
-| `--deep` | deep dive | all five layers, plus formulas / pseudocode, orders of magnitude, boundary conditions, and an optional cheat sheet |
+| `--kid` | concise intuition | journey + compact mapping/mechanism + one plain-language analogy limit |
+| *(none)* | standard | all five layers, including where the analogy breaks |
+| `--deep` | deep dive | standard + formal description, explicit assumptions, boundary conditions, optional cheat sheet |
 
-Chinese in, Chinese out; English likewise. The page is written to `diso-<topic>.html` in the working directory.
+Chinese in, Chinese out; English likewise. Every mode includes sources and a mechanism-based takeaway. Ordinary chat explanations do not automatically trigger HTML generation. The skill writes `diso-<topic>.json`, then builds `diso-<topic>.html` in the working directory. Python 3.10+ is required; the delivered HTML needs only a browser.
 
 ## What the page is made of
 
@@ -54,23 +54,43 @@ Chinese in, Chinese out; English likewise. The page is written to `diso-<topic>.
 |---|---|
 | `SKILL.md` | The skill: stance, depth modes, the five-layer skeleton, workflow, quality gates |
 | `references/design-tokens.md` | The law — palette semantics, component rules of use, the full SVG rulebook |
-| `references/output-template.md` | The implementation — complete stylesheet, HTML skeleton, diagram snippets, string map |
-| `scripts/check.py` | The validator |
-| `examples/` | A finished page (B-tree indexes) and its preview |
+| `references/output-template.md` | JSON schema, markup guidance, diagram snippets, string map |
+| `assets/base.html` | The single stylesheet and HTML shell |
+| `scripts/build.py` | Escaping, mode selection, TOC generation, strict validation and atomic output |
+| `scripts/check.py` | Validator CLI and page structure checks |
+| `scripts/markup.py`, `scripts/svg.py` | HTML parsing, static vocabulary and SVG geometry/paint checks |
+| `tests/` | Positive/negative fixtures and regression tests, run in CI |
+| `examples/` | Reproducible B+ tree JSON, generated standard page and preview |
 
-`design-tokens.md` states rules and `output-template.md` implements them; CSS is copied from the template only, so the two never drift.
+`design-tokens.md` states the visual rules. The builder copies CSS from `assets/base.html` unchanged; generated pages cannot add inline styles or extra stylesheets. When changing the asset, rebuild the example and run the tests.
 
-## The validator
+## Build and validate
 
-The visual contract is mechanical, so it's checked mechanically rather than hoped for:
+Inside this repository:
 
 ```bash
+python3 scripts/build.py examples/btree-index.json -o diso-btree-index.html
 python3 scripts/check.py diso-btree-index.html
+python3 scripts/build.py examples/btree-index.json --mode deep -o diso-btree-deep.html
+python3 -m unittest discover -s tests -v
 ```
 
-Stdlib only, no dependencies. Exit 0 means the page holds. It enforces self-containment (no script, no CDN, no external fonts), the closed 25-colour palette, banned CSS (`box-shadow`, gradients, `rgba()`, italics, radius > 10px, weight > 500), wash-vs-ink density, orthogonal-only SVG edges, the 4px layout grid, text baselines that don't clip, focus/warning-node budgets, one accent hue per figure, resolvable TOC anchors, step-numeral scarcity, and print styles.
+After installation, commands work from another project's directory by using the installed path:
 
-What it deliberately does not check is whether the page is any *good* — whether substance survives deleting the analogies, whether the "oh, I see" moment is true, whether one concept keeps one name. `SKILL.md` §7 keeps those as a human checklist.
+```bash
+python3 "$HOME/.claude/skills/diso/scripts/build.py" diso-topic.json -o diso-topic.html
+python3 "$HOME/.claude/skills/diso/scripts/check.py" diso-topic.html
+```
+
+For a project-scoped install, use that installation's absolute path instead. Claude Code skill instructions use its `${CLAUDE_SKILL_DIR}` substitution; the Python scripts resolve assets relative to themselves, never to the caller's working directory.
+
+Both scripts use only the standard library. Exit **0** means no mechanical findings, **1** means an error or warning, **2** means invalid input/usage or an I/O failure. The builder validates before replacing output, so a failed build preserves an existing page.
+
+The supported format is deliberately bounded: one exact bundled stylesheet; no JS, event handlers, embeds or external resource dependencies; six-digit palette colors and local SVG patterns; orthogonal M/L/H/V/Z paths (including relative commands), lines and polylines; geometrically checked 5×7 chevrons; rectangle/edge grids; node dimensions; accent budgets; title/description accessibility text; depth sections and matching TOC anchors. Unsupported tags, attributes, CSS, curves and transforms fail closed. Prose and escaped code are not scanned as executable markup, styles or resource URLs.
+
+**Citation links are allowed.** “Self-contained” means the page renders without external dependencies; it does not forbid links to evidence. Sources appear in every mode, with notes about the claims they support.
+
+A clean exit is **not** proof of factual accuracy, font/layout quality or safety of arbitrary untrusted HTML. This is a format validator, not a sanitizer. Human/rendered review still checks analogy quality, label/range consistency, actual arrow attachment, crossings and clipping. `SKILL.md` §7 records those checks.
 
 ## Design notes
 
