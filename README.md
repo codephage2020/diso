@@ -4,7 +4,12 @@ A Claude skill that turns a topic into an illustrated, self-contained HTML page.
 
 Hand-drawn SVG diagrams. No JavaScript or external dependencies. Open in any browser.
 
-![preview](examples/preview.png)
+<details>
+<summary>View full preview</summary>
+
+![B+ tree explanation preview](examples/preview.png)
+
+</details>
 
 ## Install
 
