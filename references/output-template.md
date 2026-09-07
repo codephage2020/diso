@@ -126,6 +126,14 @@ Full tokens and bans live in `design-tokens.md`.
       color:var(--near-black);overflow-x:auto;}
   pre code{background:none;padding:0;font-size:inherit;color:inherit;}
 
+  /* ---------- Diff (before → after; add = celadon, del = terracotta) ---------- */
+  .diff{background:var(--ivory);border-radius:8px;padding:14px 18px;margin:20px 0;
+        font-family:var(--mono);font-size:15px;line-height:1.60;overflow-x:auto;}
+  .diff .hunk{color:var(--stone);display:block;}
+  .diff .ctx{color:var(--dark-warm);display:block;}
+  .diff .add{color:var(--brand-ink);display:block;}
+  .diff .del{color:var(--accent-ink);display:block;}
+
   /* ---------- Collapsible deep-dive ---------- */
   details{background:var(--ivory);border-radius:8px;padding:0;margin:24px 0;}
   summary{cursor:pointer;padding:16px 22px;font-size:18px;font-weight:500;
@@ -186,7 +194,7 @@ Full tokens and bans live in `design-tokens.md`.
   @media print{
     body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
     .wrap{max-width:100%;padding:0;}
-    figure,.stat,.vs-card,.callout,.takeaway,details{break-inside:avoid;}
+    figure,.stat,.vs-card,.callout,.takeaway,details,.diff{break-inside:avoid;}
     details:not([open]) .dbody{display:block;} /* expand deep-dives when printing */
   }
 </style>
@@ -282,6 +290,15 @@ Full tokens and bans live in `design-tokens.md`.
         <span class="vs-label">{{Cost}}</span>
         <p>{{what was given up}}</p>
       </div>
+    </div>
+
+    <!-- evolution story (old design → new design): use a diff block instead of versus;
+         +/− prefixes are literal text, shape matches the topic (code / file tree / call tree / pseudocode) -->
+    <div class="diff">
+      <span class="hunk">{{@@ old → new @@}}</span>
+      <span class="ctx">{{ unchanged context line}}</span>
+      <span class="del">{{- what was removed}}</span>
+      <span class="add">{{+ what replaced it}}</span>
     </div>
 
     <blockquote>{{a judgment worth quoting verbatim; wrap keywords in <strong>}}</blockquote>

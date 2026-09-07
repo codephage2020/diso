@@ -210,6 +210,21 @@ code{ font-family:var(--mono); background:var(--inline-code-bg);
       color:var(--dark-warm); padding:1px 4px; border-radius:3px; font-size:0.9em; }
 ```
 
+### Diff blocks (before → after)
+When the point is "what changed" and the surrounding shape already exists, a diff beats redrawing the whole:
+```css
+.diff{ background:var(--ivory); border-radius:8px; padding:14px 18px; margin:20px 0;
+       font-family:var(--mono); font-size:15px; line-height:1.60; overflow-x:auto; }
+.diff .hunk{ color:var(--stone); }        /* context header, e.g. @@ or section name */
+.diff .ctx{ color:var(--dark-warm); }     /* unchanged context */
+.diff .add{ color:var(--brand-ink); }     /* + gained — celadon */
+.diff .del{ color:var(--accent-ink); }    /* − given up — terracotta */
+```
+- `+` / `-` prefixes are written literally as text, so the block stays copyable
+- Semantics follow the two-hue division: addition = celadon ink, removal = terracotta ink. **No per-line background tints** — color carries meaning through text alone, keeping the area budget intact
+- A diff shows the change, not the file: keep context lines to the minimum that orients the reader
+- The block is shaped text, not only code — file-tree, call-tree, control-flow, and pseudocode diffs are all valid; match the diff's shape to the topic
+
 ### Tags / term highlights
 - Chip label: `background:var(--tag-bg); color:var(--brand-ink); font-weight:500; padding:1px 6px; border-radius:4px; font-size:12px;`
 - **Inline term**: `color:var(--brand-ink); font-weight:500`, **no background block** (stacked color chips in prose blow the area budget)
@@ -264,7 +279,7 @@ summary:focus-visible{outline:2px solid var(--brand-ink);outline-offset:2px;bord
   body{background:#f5f4ed;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
   .wrap{max-width:100%;padding:0;}
   .takeaway{break-inside:avoid;}
-  figure,.stat,.vs-card,.callout{break-inside:avoid;}
+  figure,.stat,.vs-card,.callout,.diff{break-inside:avoid;}
 }
 ```
 Print keeps the parchment background (needs `print-color-adjust:exact`); figures and cards never break across pages.
@@ -383,6 +398,7 @@ Text on dark: body in parchment, labels and keywords in `--brand-light`, warning
 | An order-of-magnitude "oh" moment | stats cards (big number + small note), 2–4 per row |
 | Step guidance in the intuition journey | Large serif numeral `01` + mono tag (this section only) |
 | Paired gained-vs-cost trade-off | versus twin cards (gain = celadon / cost = terracotta); more than two items → table |
+| An evolution: old design → new design | diff block (add = celadon ink, remove = terracotta ink); match the diff's shape to the topic |
 | Lift a block above body text | ivory fill + 8px radius, no accent edge |
 | A sentence worth quoting verbatim | blockquote (one size up, no side bar) |
 | Where the analogy breaks / misconceptions | terracotta-wash callout + terracotta-ink label |

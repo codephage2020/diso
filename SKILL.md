@@ -36,9 +36,11 @@ Tone: adult to adult. The reader is smart, just lacks background. Banned: baby t
 
 **Layer 3 — the real mechanism**: first an analogy→component mapping table, then the real flow with real terms and structures. Target: the reader can retell "what goes in → what happens inside → what comes out".
 
-**Layer 4 — why designed this way**: a trade-off table (gained / cost) plus at least one "oh, I see" moment: a counterintuitive fact, an order-of-magnitude gap, or a deliberate sacrifice.
+**Layer 4 — why designed this way**: a trade-off table (gained / cost) plus at least one "oh, I see" moment: a counterintuitive fact, an order-of-magnitude gap, or a deliberate sacrifice. When the story is an evolution (old design → new design), show it as a diff block — before/after with `+` / `-` lines — instead of versus cards.
 
 **Layer 5 — where the analogy breaks & misconceptions** (skip in `--kid`): ~3 items, each: the misconception → the truth → why people think this way.
+
+**Smallest-view test**: every block earns its size. If a sentence or a small table makes the point, do not inflate it into a stats row, a versus pair, or a full-width SVG.
 
 **Ending — one-sentence summary**: repeatable verbatim, contains the mechanism, not the metaphor. In Chinese pages the takeaway block's eyebrow reads 「一句话总结」.
 
@@ -60,6 +62,7 @@ Content:
 - [ ] Every number, date, and named source verified; unverifiable claims dropped or marked approximate
 - [ ] One concept = one name throughout the page; analogy failure points written; tone is colleague-to-colleague
 - [ ] At least one "oh, I see" moment, rendered as a `.stats` card when it involves magnitude
+- [ ] Smallest-view test passed: no block is bigger than its point requires; evolutions shown as diff blocks where applicable
 
 Visual (full rules in `design-tokens.md`):
 
