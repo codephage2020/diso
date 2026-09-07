@@ -131,6 +131,30 @@ class PipelineTests(unittest.TestCase):
         self.assertRejected(self.inject_svg('<rect data-node="true" x="4" y="4" width="200" height="64" fill="#faf9f5"/>'), "node dimensions")
         self.assertRejected(self.inject_svg('<path d="M1.5 0 H40" stroke="#141413" fill="none"/>'), "grid")
 
+    def test_tspan_coordinates_sizes_and_cursor(self):
+        def text(body):
+            return self.inject_svg('<text x="32" y="64" font-size="26" fill="#141413">' + body + '</text>')
+
+        for body in ('<tspan>inherited</tspan>',
+                     '<tspan y="96" font-size="32">larger</tspan>',
+                     '<tspan dy="32">next <tspan>nested</tspan></tspan>',
+                     '<tspan y="128">up</tspan><tspan dy="-32">still safe</tspan>'):
+            with self.subTest(body=body):
+                self.assertClean(text(body))
+        for body in ('<tspan y="0">clipped</tspan>',
+                     '<tspan dy="-64">clipped</tspan>',
+                     '<tspan font-size="-5">invalid</tspan>',
+                     '<tspan font-size="NaN">invalid</tspan>',
+                     '<tspan font-size="100">clipped</tspan>',
+                     '<tspan x="NaN">invalid</tspan>',
+                     '<tspan y="12" font-size="10">small</tspan>clipped tail',
+                     '<tspan><tspan y="12" font-size="10">small</tspan>clipped tail</tspan>',
+                     '<tspan dy="-20">one</tspan><tspan dy="-20">two</tspan>',
+                     '<tspan dy="-20">one<tspan dy="-20">two</tspan></tspan>'):
+            with self.subTest(body=body):
+                self.assertRejected(text(body))
+        self.assertRejected(self.inject_svg('<tspan y="64" font-size="26" fill="#141413">orphan</tspan>'), "text parent")
+
     def test_attribute_order_quotes_and_case_do_not_change_rules(self):
         self.assertClean(self.inject_svg("<rect HEIGHT='64' fill='#FAF9F5' width='160' y='4' x='4' rx='4' stroke='#141413'/>"))
         self.assertRejected(self.inject_svg("<path stroke-width='1.5' stroke='#78c2c4' fill='none' d='M0 0 H40'/>"), "wash strokes")
