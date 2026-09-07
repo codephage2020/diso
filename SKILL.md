@@ -71,21 +71,28 @@ The visual system: parchment `#f5f4ed`, celadon for focus and gains, terracotta 
 
 1. **Parse** `$ARGUMENTS` for the topic and `--kid` / `--deep`. No topic → ask. No flag → standard. Do not pass the raw topic or arguments to a shell.
 2. **Verify facts.** Check numbers, dates, versions and named sources before writing. Keep a source list with the claim each source supports. Mark teaching assumptions and derived estimates explicitly. Drop unsupported factual claims; do not turn them into “approximate” facts.
+
+   Batch independent source searches and reads. Reuse already-read sources from this task when they support the claim and are current enough. Stop researching once each retained factual claim has adequate evidence; expand research for unresolved claims or conflicting sources.
 3. **Choose the analogy** by §3 and sketch its mapping. If the mapping is thin, choose another.
 4. **Outline the requested depth**, retaining a real mechanism and an analogy limit in every mode. Apply the smallest-view test before generating figures.
+
+   Start with four steps and one substantive diagram; add steps or diagrams when they explain an additional relationship. Write only fields used by the requested mode: standard needs `mechanism_html`, `tradeoffs_html` and `misconceptions`; kid needs `kid_mechanism` and `kid_boundary`; deep extends standard with `deep_title` and `deep_html`. The bundled example contains all modes for testing; each delivered input targets the requested mode.
 5. **Read the authoring and design references**, then write `diso-<topic-slug>.json` in the current workspace. Use a simple filename slug. Plain string fields are escaped by the builder; only fields ending in `_html` and `svg` are markup. Escape code examples inside those markup fields. Localize visible copy and SVG text to the request language.
 6. **Build and validate from the current workspace**, using the installed skill's absolute path:
 
 ```bash
 python3 "${CLAUDE_SKILL_DIR}/scripts/build.py" \
   "diso-<topic-slug>.json" -o "diso-<topic-slug>.html"
-python3 "${CLAUDE_SKILL_DIR}/scripts/check.py" "diso-<topic-slug>.html"
 ```
 
-Claude Code substitutes `${CLAUDE_SKILL_DIR}` in this skill body; it is not a shell environment variable you should assume exists in other agents. In another host, resolve the directory containing the loaded `SKILL.md` and substitute that absolute directory in both commands. Keep input/output paths in the user's workspace. The scripts resolve their own assets relative to `__file__`, so installation location and shell working directory can differ.
+Claude Code substitutes `${CLAUDE_SKILL_DIR}` in this skill body; it is not a shell environment variable you should assume exists in other agents. In another host, resolve the directory containing the loaded `SKILL.md` and substitute that absolute directory in the command. Keep input/output paths in the user's workspace. The scripts resolve their own assets relative to `__file__`, so installation location and shell working directory can differ.
 
 Python 3.10+ is required; there are no third-party dependencies. The JSON `mode` defaults to `standard`; use `kid` or `deep` when requested. A build with any error or warning fails before writing the output. Fix every finding and rebuild; never bypass validation or replace the trusted stylesheet to make a generated page pass.
+
+The build already runs the full validator. Use standalone `check.py` when inspecting an existing HTML file. After a failed build, patch the reported fields in the JSON and rebuild. Preserve the rest of the researched content and geometry.
 7. **Review §7** and inspect the rendered page when a renderer is available. The validator cannot judge factual support, readability, clipping in every font, or whether an arrow conveys the right relationship.
+
+   Reuse the available browser session, wait for document/font readiness, and inspect desktop and narrow layouts. Bound each browser operation to 15 seconds. On a timeout, capture the error and check any existing screenshot before choosing a targeted retry; report the remaining visual gap when rendering stays unavailable. Deliver the HTML link and a short result after verification. Record elapsed time for research, authoring, build and rendering when investigating slow delivery; distinguish measured script time from model/network latency.
 
 ## 7. Quality checklist
 

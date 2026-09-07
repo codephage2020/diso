@@ -140,6 +140,34 @@ def check_edges(node, result):
             result.error(node.line, "SVG edge coordinates are off the 4px grid")
 
 
+def check_text(node, result, y=0):
+    """Track the vertical text cursor through nested and successive tspans.
+
+    Position attributes use the supported scalar, unitless syntax. A tspan's
+    explicit y resets the cursor; dy advances it for subsequent text as well.
+    """
+    size = 0
+    try:
+        for attr in ("x", "dx"):
+            if attr in node.attrs:
+                number(node.attrs[attr])
+        if "y" in node.attrs:
+            y = number(node.attrs["y"])
+        y += number(node.attrs.get("dy", "0"))
+        size = number(node.inherited("font-size", "0"))
+        if not math.isfinite(y) or size <= 0 or y < size * 1.2:
+            result.error(node.line, "text baseline must be ≥ font-size × 1.2; a positive font-size is required")
+    except ValueError as exc:
+        result.error(node.line, str(exc))
+    for child in node.children:
+        if isinstance(child, Node) and child.tag == "tspan":
+            y = check_text(child, result, y)
+        elif isinstance(child, str) and child.strip() and (not math.isfinite(y) or y < size * 1.2):
+            # A child can move the cursor; following text resumes this node's size.
+            result.error(node.line, "text baseline must be ≥ font-size × 1.2 after tspan positioning")
+    return y
+
+
 def check_svgs(nodes, ids, result):
     svgs = [n for n in nodes if n.tag == "svg"]
     if not svgs:
@@ -233,10 +261,9 @@ def check_svgs(nodes, ids, result):
                         result.error(node.line, "SVG edges require a visible stroke")
                     check_edges(node, result)
                 if node.tag == "text":
-                    y = number(node.attrs.get("y", "0"))
-                    size = number(node.inherited("font-size", "0"))
-                    if size <= 0 or y < size * 1.2:
-                        result.error(node.line, "text baseline must be ≥ font-size × 1.2; a positive font-size is required")
+                    check_text(node, result)
+                if node.tag == "tspan" and (node.parent.tag not in {"text", "tspan"} or not node.ancestor("text")):
+                    result.error(node.line, "tspan needs a text parent (directly or through tspans)")
             except ValueError as exc:
                 result.error(node.line, str(exc))
         if len(hues) > 1:
