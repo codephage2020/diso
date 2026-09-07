@@ -84,6 +84,10 @@ Full tokens and bans live in `design-tokens.md`.
               letter-spacing:2px;color:var(--brand-ink);}
   .step-txt{font-size:19px;line-height:1.65;color:var(--near-black);}
 
++  /* ---------- Generic lifted container (elevation by fill, never stroke) ---------- */
++  .card{background:var(--ivory);border-radius:8px;padding:22px 26px;margin:24px 0;}
++  .card p:last-child{margin-bottom:0;}
+
   /* ---------- Stats ---------- */
   .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
          gap:16px;margin:28px 0;}
@@ -194,7 +198,7 @@ Full tokens and bans live in `design-tokens.md`.
   @media print{
     body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
     .wrap{max-width:100%;padding:0;}
-    figure,.stat,.vs-card,.callout,.takeaway,details,.diff{break-inside:avoid;}
+    figure,.stat,.vs-card,.callout,.takeaway,details,.diff,.card{break-inside:avoid;}
     details:not([open]) .dbody{display:block;} /* expand deep-dives when printing */
   }
 </style>
