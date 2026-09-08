@@ -167,6 +167,34 @@ class PipelineTests(unittest.TestCase):
         self.assertRejected(self.inject_svg('<rect x="4" y="4" width="160" height="64" fill="#78c2c4"/>' * 2), "focus nodes")
         self.assertRejected(self.inject_svg('<circle r="12" fill="#267072" cx="24" cy="24"/>' * 7), "sequence dots")
 
+    def test_wash_circles_count_as_accent_budget(self):
+        # A wash circle is a solid accent fill: the node budget counts it...
+        self.assertRejected(self.inject_svg('<circle cx="480" cy="120" r="48" fill="#78c2c4"/>' * 3), "focus nodes")
+        self.assertRejected(self.inject_svg('<circle cx="480" cy="120" r="48" fill="#c47a78"/>' * 2), "warning nodes")
+        # ...and a big one blows the 5% canvas-area budget instead of hiding.
+        self.assertRejected(self.inject_svg('<circle cx="480" cy="200" r="400" fill="#78c2c4"/>'), "budget is 5%")
+        # Small wash circles stay affordable, like small wash rects.
+        self.assertClean(self.inject_svg('<circle cx="480" cy="120" r="48" fill="#78c2c4"/>'))
+
+    def test_unknown_template_placeholder_fails_without_traceback(self):
+        # A modified assets/base.html (e.g. a typo'd placeholder) must exit 2
+        # with a clear message, not crash with a KeyError traceback.
+        with tempfile.TemporaryDirectory() as folder:
+            base = Path(folder)
+            skill = base / "installed skill"
+            shutil.copytree(ROOT / "scripts", skill / "scripts", ignore=shutil.ignore_patterns("__pycache__"))
+            (skill / "assets").mkdir()
+            (skill / "assets" / "base.html").write_text(
+                "{{title}} {{absent_placeholder}}", encoding="utf-8")
+            source, output = base / "input.json", base / "output.html"
+            source.write_text(json.dumps(self.data), encoding="utf-8")
+            run = subprocess.run([sys.executable, str(skill / "scripts/build.py"), str(source),
+                                  "-o", str(output)], capture_output=True, text=True)
+            self.assertEqual(run.returncode, 2, run.stdout + run.stderr)
+            self.assertNotIn("Traceback", run.stderr)
+            self.assertIn("absent_placeholder", run.stderr)
+            self.assertFalse(output.exists())
+
     def test_modes_keep_mapping_sources_and_matching_toc(self):
         for mode in ("kid", "standard", "deep"):
             with self.subTest(mode):

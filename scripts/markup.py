@@ -1,16 +1,14 @@
 """The deliberately small HTML/SVG vocabulary accepted by diso."""
-import base64
-import binascii
+import os
 import re
-from dataclasses import dataclass, field
 from html.parser import HTMLParser
-from pathlib import Path
-from urllib.parse import urlsplit
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 IDENTIFIER = r"[A-Za-z][A-Za-z0-9_.:-]*"
+IDENTIFIER_RE = re.compile(IDENTIFIER)
+RASTER_RE = re.compile(r"data:image/(png|jpeg|gif|webp);base64,([A-Za-z0-9+/]*={0,2})")
 VOID = {"meta", "br", "hr", "img", "col"}
-HTML_TAGS = set("html head meta title style body nav main article header footer section div span p h1 h2 h3 h4 ul ol li table thead tbody tfoot tr th td caption colgroup col b strong code pre blockquote details summary a br hr figure figcaption sup sub dl dt dd time abbr kbd samp img".split())
+HTML_TAGS = set("html head meta title style body nav main article header footer section div span p h1 h2 h3 ul ol li table thead tbody tfoot tr th td caption colgroup col b strong code pre blockquote details summary a br hr figure figcaption sup sub dl dt dd time abbr kbd samp img".split())
 SVG_TAGS = {"svg", "title", "desc", "defs", "pattern", "g", "rect", "circle", "text", "tspan", "path", "line", "polyline"}
 GLOBAL_ATTRS = {"id", "class", "lang", "dir", "title", "role"}
 HTML_ATTRS = {
@@ -34,25 +32,43 @@ SVG_ATTRS = {
 }
 
 
-@dataclass
 class Node:
-    tag: str
-    attrs: dict
-    line: int
-    parent: "Node | None" = field(default=None, repr=False)
-    children: list = field(default_factory=list)
+    # Plain classes keep the hot import path free of the dataclasses machinery.
+    __slots__ = ("tag", "attrs", "line", "parent", "children", "svg", "_classes")
+
+    def __init__(self, tag, attrs, line, parent=None):
+        self.tag = tag
+        self.attrs = attrs
+        self.line = line
+        self.parent = parent
+        self.children = []
+        self._classes = None
+        # Cached once at parse time: ancestor("svg") is called for nearly
+        # every node in check_markup, and walking parents repeatedly costs
+        # more than every parse-time assignment.
+        self.svg = self if tag == "svg" else (parent.svg if parent is not None and isinstance(parent, Node) else None)
 
     def walk(self):
-        yield self
-        for child in self.children:
-            if isinstance(child, Node):
-                yield from child.walk()
+        # Iterative traversal: the recursive generator re-entered walk()
+        # once per node (76k+ generator frames per validate on the example).
+        stack = [self]
+        while stack:
+            node = stack.pop()
+            yield node
+            for child in reversed(node.children):
+                if isinstance(child, Node):
+                    stack.append(child)
 
     def text(self):
         return "".join(c.text() if isinstance(c, Node) else c for c in self.children)
 
     def has_class(self, name):
-        return name in self.attrs.get("class", "").split()
+        # Hot helper (hundreds of calls per validate). A node's class list is
+        # fixed once parsed, so split lazily once and cache on the instance.
+        cached = self._classes
+        if cached is None:
+            cached = self._classes = self.attrs.get("class", "").split()
+        return name in cached
 
     def ancestor(self, tag):
         node = self
@@ -61,6 +77,9 @@ class Node:
                 return node
             node = node.parent
         return None
+
+    def in_svg(self):
+        return self.svg is not None
 
     def inherited(self, name, default=""):
         node = self
@@ -71,10 +90,12 @@ class Node:
         return default
 
 
-@dataclass
 class Result:
-    errors: list = field(default_factory=list)
-    warnings: list = field(default_factory=list)
+    __slots__ = ("errors", "warnings")
+
+    def __init__(self):
+        self.errors = []
+        self.warnings = []
 
     def error(self, line, message):
         self.errors.append((line, message))
@@ -98,9 +119,14 @@ class Document(HTMLParser):
 
     def handle_starttag(self, tag, attrs):
         line = self.getpos()[0]
-        if len({k for k, _ in attrs}) != len(attrs):
-            self.result.error(line, "duplicate attributes are ambiguous")
-        node = Node(tag, {k: v or "" for k, v in attrs}, line, self.stack[-1])
+        # attrs is a list of (name, value-or-None); collapse to a dict for the
+        # Node while flagging duplicate names (None values become empty strings).
+        node_attrs = {}
+        for name, value in attrs:
+            if name in node_attrs:
+                self.result.error(line, "duplicate attributes are ambiguous")
+            node_attrs[name] = value or ""
+        node = Node(tag, node_attrs, line, self.stack[-1])
         self.stack[-1].children.append(node)
         if tag not in VOID:
             self.stack.append(node)
@@ -151,16 +177,22 @@ def parse_html(raw, result=None):
 
 
 def trusted_stylesheet():
-    asset = (ROOT / "assets/base.html").read_text(encoding="utf-8")
+    with open(os.path.join(ROOT, "assets", "base.html"), encoding="utf-8") as stream:
+        asset = stream.read()
     return asset.split("<style>", 1)[1].split("</style>", 1)[0].strip()
 
 
 def valid_link(value):
     """Only passive HTTP(S) citations and document fragments are supported."""
-    if not value or any(ord(c) <= 32 or ord(c) == 127 for c in value) or "\\" in value:
+    if not value or "\\" in value:
+        return False
+    # Any control character (including whitespace) anywhere, or DEL, kills the
+    # link: schemes like "java\x01script:" hide payloads between the checks.
+    if any(ord(c) <= 32 or ord(c) == 127 for c in value):
         return False
     if value.startswith("#"):
-        return bool(re.fullmatch(IDENTIFIER, value[1:]))
+        return bool(IDENTIFIER_RE.fullmatch(value[1:]))
+    from urllib.parse import urlsplit
     try:
         url = urlsplit(value)
         return url.scheme.lower() in {"http", "https"} and bool(url.hostname)
@@ -169,12 +201,13 @@ def valid_link(value):
 
 
 def raster_data(value):
-    match = re.fullmatch(r"data:image/(png|jpeg|gif|webp);base64,([A-Za-z0-9+/]*={0,2})", value)
+    from base64 import b64decode
+    match = RASTER_RE.fullmatch(value)
     if not match:
         return False
     try:
-        data = base64.b64decode(match[2], validate=True)
-    except (ValueError, binascii.Error):
+        data = b64decode(match[2], validate=True)
+    except ValueError:
         return False
     return {"png": data.startswith(b"\x89PNG\r\n\x1a\n"),
             "jpeg": data.startswith(b"\xff\xd8\xff"),
@@ -186,10 +219,10 @@ def check_markup(document, result):
     nodes = list(document.root.walk())[1:]
     ids = {}
     for node in nodes:
-        svg = node.ancestor("svg")
+        svg = node.svg
         if node.tag not in (SVG_TAGS if svg else HTML_TAGS):
             result.error(node.line, f"<{node.tag}> is unsupported; use static HTML and inline SVG")
-        if node.tag == "svg" and node.parent.ancestor("svg"):
+        if node.tag == "svg" and node.parent.svg:
             result.error(node.line, "nested SVG canvases are unsupported")
         attrs = GLOBAL_ATTRS | (PRESENTATION | SVG_ATTRS.get(node.tag, set()) if svg else HTML_ATTRS.get(node.tag, set()))
         for name, value in node.attrs.items():
@@ -200,7 +233,7 @@ def check_markup(document, result):
             if name.startswith("on"):
                 result.error(node.line, "event handlers violate zero-JS")
             if name == "id":
-                if not re.fullmatch(IDENTIFIER, value):
+                if not IDENTIFIER_RE.fullmatch(value):
                     result.error(node.line, f"invalid id {value!r}")
                 if value in ids:
                     result.error(node.line, f"duplicate id {value!r}")

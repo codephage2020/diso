@@ -5,25 +5,25 @@ Exit 0 = no findings; 1 = errors OR warnings; 2 = input/usage error.
 CSS must match assets/base.html. This is a format validator, not a sanitizer
 or browser security sandbox. Editorial quality still needs human review.
 """
-import argparse
 import re
 import sys
 from collections import Counter
-from pathlib import Path
 
 from markup import Result, check_markup, parse_html
 from svg import check_svgs
 
+LANG_RE = re.compile(r"[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*")
+
 
 def check_structure(document, nodes, ids, result):
-    counts = Counter(n.tag for n in nodes if not n.ancestor("svg"))
+    counts = Counter(n.tag for n in nodes if not n.svg)
     for tag in ("html", "head", "body", "title"):
         if counts[tag] != 1:
             result.error(1, f"expected exactly one HTML <{tag}>")
     if document.doctypes != 1:
         result.error(1, "expected one <!DOCTYPE html>")
     html = next((n for n in nodes if n.tag == "html"), None)
-    if not html or not re.fullmatch(r"[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*", html.attrs.get("lang", "")):
+    if not html or not LANG_RE.fullmatch(html.attrs.get("lang", "")):
         result.error(1, "HTML needs a valid lang attribute")
     mode = html.attrs.get("data-mode", "") if html else ""
     if mode not in {"kid", "standard", "deep"}:
@@ -86,16 +86,19 @@ def report(result, path):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("file", type=Path)
-    args = parser.parse_args(argv)
+    argv = sys.argv[1:] if argv is None else argv
+    if len(argv) != 1 or argv[0].startswith("-"):
+        print(__doc__ + "\nusage: check.py page.html", file=sys.stderr)
+        return 2
+    from pathlib import Path
+    path = Path(argv[0])
     try:
-        raw = args.file.read_text(encoding="utf-8")
+        raw = path.read_text(encoding="utf-8")
         result = validate(raw)
     except (OSError, UnicodeError) as exc:
-        print(f"ERROR {args.file}: {exc}", file=sys.stderr)
+        print(f"ERROR {path}: {exc}", file=sys.stderr)
         return 2
-    report(result, args.file)
+    report(result, path)
     return 0 if result.ok else 1
 
 

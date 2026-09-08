@@ -32,6 +32,7 @@
   {"name":"second style block", "valid":false, "html":"<style>p{box-shadow:0 0 4px #000000}</style>"},
   {"name":"duplicate attributes", "valid":false, "html":"<a href='#p1' href='javascript:alert(1)'>Go</a>"},
   {"name":"unclosed tags", "valid":false, "html":"<div><p>Example</div>"},
+  {"name":"retired h4 heading", "valid":false, "html":"<h4>Example</h4>"},
   {"name":"duplicate id", "valid":false, "html":"<p id='p2'>Example</p>"},
   {"name":"missing target", "valid":false, "html":"<a href='#absent'>Go</a>"},
   {"name":"legacy color attribute", "valid":false, "html":"<table bgcolor='red'><tbody><tr><td>Example</td></tr></tbody></table>"},

@@ -16,13 +16,21 @@ CELADON = {"#78c2c4", "#267072", "#9ad8da", "#ddefef", "#e9f4f4", "#cde9e9"}
 TERRACOTTA = {"#c47a78", "#8c4644", "#d89d9b", "#f4e8e7"}
 SVG_NS = "http://www.w3.org/2000/svg"
 NUMBER = r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?"
+NUMBER_RE = re.compile(NUMBER)
+PATH_TOKENS = re.compile(r"[A-Za-z]|" + NUMBER)
 PAINT_REF = re.compile(r"url\(\s*(?:'(#[-\w.:]+)'|\"(#[-\w.:]+)\"|(#[-\w.:]+))\s*\)")
 
 
 def number(value):
-    if not re.fullmatch(NUMBER, value):
+    # float() accepts a superset of the NUMBER grammar. Whitespace and digit
+    # separators are rejected here; inf/nan pass float() and are caught by the
+    # isfinite check right after. The old regex pre-check was redundant work.
+    if not isinstance(value, str) or value.strip() != value or "_" in value:
         raise ValueError(f"expected a unitless SVG number, got {value!r}")
-    value = float(value)
+    try:
+        value = float(value)
+    except ValueError:
+        raise ValueError(f"expected a unitless SVG number, got {value!r}")
     if not math.isfinite(value):
         raise ValueError("SVG coordinates must be finite")
     return value
@@ -31,7 +39,7 @@ def number(value):
 def tokenize(value, pattern):
     tokens = []
     position = 0
-    for match in re.finditer(pattern, value):
+    for match in pattern.finditer(value):
         gap = value[position:match.start()]
         if gap.strip(" \t\r\n,") or gap.count(",") > 1:
             raise ValueError("invalid SVG geometry syntax")
@@ -45,7 +53,7 @@ def tokenize(value, pattern):
 
 
 def numbers(value):
-    return [number(t) for t in tokenize(value, NUMBER)]
+    return [number(t) for t in tokenize(value, NUMBER_RE)]
 
 
 def path_points(value):
@@ -53,7 +61,7 @@ def path_points(value):
 
     Curves fail closed. Separate moveto subpaths never create implicit edges.
     """
-    tokens = tokenize(value, r"[A-Za-z]|" + NUMBER)
+    tokens = tokenize(value, PATH_TOKENS)
     paths, current = [], []
     point = (0.0, 0.0)
     command = None
@@ -237,11 +245,12 @@ def check_svgs(nodes, ids, result):
                             result.error(node.line, f"rect {attr} is off the 4px grid")
                         if attr in {"width", "height"} and dims[attr] <= 0:
                             result.error(node.line, f"rect {attr} must be positive")
-                    focus += fill == "#78c2c4"
-                    warning += fill == "#c47a78"
-                    groups += fill == "#edece3"
                     if fill in WASH and "width" in dims and "height" in dims:
                         accent_area += dims["width"] * dims["height"]
+                    if fill in WASH:
+                        focus += fill == "#78c2c4"
+                        warning += fill == "#c47a78"
+                    groups += fill == "#edece3"
                     # Rounded/stroked boxes are nodes. Square book bars, canvas
                     # pads and unstroked illustrations have their own dimensions.
                     is_node = node.attrs.get("data-node") == "true" or (stroke != "none" and ("rx" in node.attrs or "ry" in node.attrs))
@@ -255,6 +264,12 @@ def check_svgs(nodes, ids, result):
                         number(node.attrs.get(attr, "0"))
                     if radius <= 0:
                         result.error(node.line, "circle radius must be positive")
+                    # Wash circles are accent fills too: count them and weigh
+                    # them by area, same as wash rects.
+                    if fill in WASH:
+                        focus += fill == "#78c2c4"
+                        warning += fill == "#c47a78"
+                        accent_area += math.pi * radius * radius
                     dots += radius == 12 and fill == "#267072"
                 if node.tag in {"path", "line", "polyline"}:
                     if stroke == "none":

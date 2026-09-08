@@ -6,6 +6,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { chromium } = require('playwright');
+const PYTHON = process.env.PYTHON || (process.platform === 'win32' ? 'python' : 'python3');
 
 async function main() {
   assert(process.argv[2], 'Provide an artifact directory outside the checkout');
@@ -19,7 +20,7 @@ async function main() {
   try {
     for (const mode of ['kid', 'standard', 'deep']) {
       const file = path.join(output, `${mode}.html`);
-      execFileSync(process.env.PYTHON || 'python3', [path.join(root, 'scripts/build.py'),
+      execFileSync(PYTHON, [path.join(root, 'scripts/build.py'),
         path.join(root, 'examples/btree-index.json'), '--mode', mode, '-o', file], { timeout: 15000 });
       for (const width of [390, 1440]) {
         const start = performance.now();
