@@ -17,19 +17,18 @@ LABELS = {
     "en": {
         "site": "diso / Plain, Not Shallow", "contents": "Contents", "figure": "Fig.",
         "p1": "Build the intuition", "p2": "The real mechanism",
-        "p3": "Why designed this way", "p4": "Where the analogy breaks",
+        "p3": "Why designed this way",
         "analogy": "Role in the analogy", "component": "Real component", "note": "Note",
-        "misconception": "Misconception", "reason": "Why this seems plausible",
         "sources": "Sources", "takeaway": "One-sentence summary", "cheatsheet": "Cheat sheet",
     },
     "zh": {
         "site": "深入浅出", "contents": "目录", "figure": "图",
-        "p1": "先建立直觉", "p2": "拆开看真实机制", "p3": "为什么这样设计", "p4": "这个类比在哪里失效",
+        "p1": "先建立直觉", "p2": "拆开看真实机制", "p3": "为什么这样设计",
         "analogy": "类比里的角色", "component": "真实系统里是什么", "note": "说明",
-        "misconception": "误解", "reason": "为什么容易这样想",
         "sources": "来源", "takeaway": "一句话总结", "cheatsheet": "速查卡",
     },
 }
+# Accept retired section fields so existing JSON remains rebuildable.
 FIELDS = {"title", "lang", "mode", "date", "essence", "takeaway", "steps", "mapping",
           "mechanism_html", "tradeoffs_html", "misconceptions", "kid_mechanism", "kid_boundary",
           "deep_html", "deep_title", "cheatsheet_html", "sources", "labels", "headings"}
@@ -75,13 +74,15 @@ def render(data, mode=None):
         raise ValueError("mode must be kid, standard or deep")
     language = lang.lower().split("-")[0]
     overrides = data.get("labels", {})
-    object_fields(overrides, LABELS["en"].keys(), "labels")
+    object_fields(overrides, LABELS["en"].keys() | {"p4", "misconception", "reason"}, "labels")
+    overrides = {key: value for key, value in overrides.items() if key in LABELS["en"]}
     if language not in LABELS and overrides.keys() != LABELS["en"].keys():
         raise ValueError("languages other than en/zh need a complete localized labels object")
     labels = {**LABELS.get(language, LABELS["en"]), **overrides}
     labels = {key: escape(string(value, f"labels.{key}")) for key, value in labels.items()}
     headings = data.get("headings", {})
     object_fields(headings, {"p1", "p2", "p3", "p4"}, "headings")
+    headings = {key: value for key, value in headings.items() if key != "p4"}
     for key, value in headings.items():
         string(value, f"headings.{key}")
     generated = data.get("date", date.today().isoformat())
@@ -126,14 +127,6 @@ def render(data, mode=None):
 
     if mode != "kid":
         section("p3", string(data.get("tradeoffs_html"), "tradeoffs_html"))
-        reason_sep = "：" if language == "zh" else ": "
-        boundaries = []
-        for i, item in enumerate(list_field(data, "misconceptions"), 1):
-            object_fields(item, {"belief", "truth", "reason"}, "misconception")
-            boundaries.append(f'<div class="callout"><span class="callout-label">{labels["misconception"]} {i}</span><h3>{text_field(item, "belief")}</h3><p>{text_field(item, "truth")} {labels["reason"]}{reason_sep}{text_field(item, "reason")}</p></div>')
-        section("p4", "\n".join(boundaries))
-    else:
-        section("p4", f'<div class="callout"><p>{text_field(data, "kid_boundary")}</p></div>')
     if mode == "deep" and data.get("cheatsheet_html"):
         section("cheatsheet", string(data["cheatsheet_html"], "cheatsheet_html"))
 

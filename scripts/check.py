@@ -28,7 +28,7 @@ def check_structure(document, nodes, ids, result):
     mode = html.attrs.get("data-mode", "") if html else ""
     if mode not in {"kid", "standard", "deep"}:
         result.error(1, "HTML data-mode must be kid, standard or deep")
-    expected = {"p1", "p2", "p4", "takeaway", "sources"} | ({"p3"} if mode != "kid" else set())
+    expected = {"p1", "p2", "takeaway", "sources"} | ({"p3"} if mode != "kid" else set())
     for name in expected:
         if name not in ids:
             result.error(0, f"missing required section #{name}")
@@ -57,7 +57,7 @@ def check_structure(document, nodes, ids, result):
         result.error(0, "kid mode omits the full trade-off section")
     if mode == "deep" and not any(n.tag == "details" for n in nodes):
         result.error(0, "deep mode needs a formal description in <details>")
-    for name in ("p2", "p4", "sources"):
+    for name in ("p2", "sources"):
         if name in ids and not ids[name].text().strip():
             result.error(ids[name].line, f"#{name} must not be empty")
 

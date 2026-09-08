@@ -212,7 +212,6 @@
 <a href="#p1"><span>先建立直觉</span></a>
 <a href="#p2"><span>拆开看真实机制</span></a>
 <a href="#p3"><span>为什么这样设计</span></a>
-<a href="#p4"><span>这个类比在哪里失效</span></a>
 <a href="#sources"><span>来源</span></a>
 <a href="#takeaway"><span>一句话总结</span></a>
 </nav>
@@ -392,13 +391,6 @@
 <table><thead><tr><th>得到</th><th>代价</th></tr></thead><tbody><tr><td>点查逐层缩小范围，范围扫描能复用键序</td><td>索引占用空间，相关写入需要维护索引</td></tr><tr><td>高扇出减少树的层数</td><td>页面容量有限，插入可能触发分裂</td></tr></tbody></table>
 <p>反直觉之处：即使访问四层索引页，只要所需页已在缓存中，索引导航也可以不发生物理读。相反，二级索引找到主键后，可能还要继续查聚簇索引。层数、页面访问数和物理读次数是三个不同量。<a href="#sources">[1]</a> <a href="#sources">[2]</a></p>
 <blockquote>索引用写入时的维护和额外空间，换取查询时更小的搜索范围。</blockquote>
-</section>
-<section class="part" id="p4">
-<div class="part-eyebrow">Part 4 · 这个类比在哪里失效</div>
-<h2>图书馆的类比在哪里失效</h2>
-<div class="callout"><span class="callout-label">误解 1</span><h3>“访问一层就要读一次磁盘”</h3><p>先区分逻辑页面访问和物理读；缓冲池命中时，导航不需要把该页重新从存储读入。 为什么容易这样想：在图书馆走到一个书架总要花路程，类比没有表示缓存。</p></div>
-<div class="callout"><span class="callout-label">误解 2</span><h3>“索引越多，每种操作都越快”</h3><p>索引可以减少查询工作，但要占空间，并维护受插入、更新、删除影响的索引记录。收益取决于查询和写入负载。 为什么容易这样想：目录类比容易让人只看到查找便利，忽略目录维护。</p></div>
-<div class="callout"><span class="callout-label">误解 3</span><h3>“二级索引总要回表，叶子里只是行指针”</h3><p>InnoDB 二级索引保存索引列及主键列。需要额外列时通常再查聚簇索引；覆盖查询可能免去这一步，实际还受可见性检查等条件影响。 为什么容易这样想：“卡片指向一本书”不能表示索引记录本身也包含查询所需内容。</p></div>
 </section>
 <section class="part" id="sources">
 <div class="part-eyebrow">来源</div>

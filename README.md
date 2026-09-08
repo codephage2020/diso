@@ -1,6 +1,6 @@
 # diso — 深入浅出
 
-A Claude skill that turns a topic into an illustrated, self-contained HTML page. Start with an analogy, understand the real mechanism, and learn where the analogy breaks.
+A Claude skill that turns a topic into an illustrated, self-contained HTML page. Start with an analogy, understand the real mechanism, and explore its design trade-offs.
 
 Hand-drawn SVG diagrams. No JavaScript or external dependencies. Open in any browser.
 
@@ -31,9 +31,9 @@ For a project-only installation, clone into `.claude/skills/diso` inside your pr
 
 | Mode | Output |
 |---|---|
-| Default | Essence → illustrated intuition → real mechanism → design rationale → analogy limits |
-| `--kid` | A shorter explanation with a simple mechanism and analogy limit |
-| `--deep` | All five layers plus formal details, assumptions and boundary conditions |
+| Default | Essence → illustrated intuition → real mechanism → design rationale |
+| `--kid` | A shorter explanation with an illustrated intuition and compact mechanism |
+| `--deep` | Standard plus formal details, assumptions and boundary conditions |
 
 Every mode includes sources and follows the input language. The skill writes `diso-<topic>.json` and `diso-<topic>.html` to your working directory. Open the HTML directly; no server is needed.
 

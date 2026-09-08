@@ -16,17 +16,18 @@ See `examples/btree-index.json` for a complete input that can be built in all th
 | `mapping` | At least three rows, each an array of three strings: analogy role, real component, note |
 | `mechanism_html` | Required in standard/deep: real flow, definitions, actual structures |
 | `tradeoffs_html` | Required in standard/deep: gains/costs and a supported counterintuitive insight |
-| `misconceptions` | Required in standard/deep: objects with `belief`, `truth`, `reason` |
-| `kid_mechanism`, `kid_boundary` | Required in kid: compact real mechanism and one specific analogy limit |
+| `kid_mechanism` | Required in kid: compact real mechanism |
 | `deep_title`, `deep_html` | Required in deep: collapsible formal description, assumptions and boundary conditions |
 | `cheatsheet_html` | Optional, emitted only in deep; compact tables/code, no new concepts |
 | `sources` | Required nonempty array of `title`, `note` (claim supported), optional absolute HTTP(S) `url`; books/papers may omit URL |
-| `headings` | Optional `p1`/`p2`/`p3`/`p4` section-title overrides |
+| `headings` | Optional `p1`/`p2`/`p3` section-title overrides |
 | `labels` | Optional UI string overrides; see keys below; complete translations required for languages other than en/zh |
 
-The builder ignores depth-specific content in modes that omit it. A standard page has all five layers and no deep details. Kid keeps the journey, compact mapping/mechanism and a short limit; it omits full trade-offs. All modes retain sources and a takeaway. Source checking remains the author's responsibility; the builder does not browse or execute input.
+The builder ignores depth-specific content in modes that omit it. A standard page contains the intuition, mapping, mechanism and trade-offs. Kid keeps the journey and compact mapping/mechanism. All modes retain sources and a takeaway. Source checking remains the author's responsibility; the builder does not browse or execute input.
 
-`labels` keys: `site`, `contents`, `figure`, `p1`, `p2`, `p3`, `p4`, `analogy`, `component`, `note`, `misconception`, `reason`, `sources`, `takeaway`, `cheatsheet`.
+`labels` keys: `site`, `contents`, `figure`, `p1`, `p2`, `p3`, `analogy`, `component`, `note`, `sources`, `takeaway`, `cheatsheet`.
+
+Legacy `misconceptions`, `kid_boundary`, `headings.p4` and the labels `p4`/`misconception`/`reason` are accepted and ignored when rebuilding older inputs.
 
 ## Markup fields
 
@@ -57,12 +58,10 @@ The author must translate every visible content string and SVG label into the re
 | Part 1 · Build the intuition | Part 1 · 先建立直觉 |
 | Part 2 · The real mechanism | Part 2 · 拆开看真实机制 |
 | Part 3 · Why designed this way | Part 3 · 为什么这样设计 |
-| Part 4 · Where the analogy breaks | Part 4 · 这个类比在哪里失效 |
 | Fig. 1 · | 图 1 · |
 | Role in the analogy / What it really is / Note | 类比里的角色 / 真实系统里是什么 / 说明 |
 | One layer deeper: … | 再深一层：… |
 | Gained / Cost | 得到 / 代价 |
-| Misconception 1 | 误解 1 |
 | One-sentence summary (takeaway eyebrow) | 一句话总结 |
 | Cheat sheet (`--deep`, optional) | 速查卡 |
 | Sources / Contents | 来源 / 目录 |

@@ -237,7 +237,7 @@ Text on dark: body in parchment, labels and keywords in `--brand-light`, warning
 | An evolution: old design → new design | `.diff` (add = celadon ink, remove = terracotta ink) |
 | Lift a block above body text | ivory fill + 8px radius, no accent edge |
 | A sentence worth quoting verbatim | `blockquote`, one size up, no side bar |
-| Where the analogy breaks / misconceptions | `.callout` — terracotta wash + terracotta-ink label |
+| Cost or risk callouts | `.callout` — terracotta wash + terracotta-ink label |
 | Key node in a diagram | `#78C2C4` solid + `#267072` stroke, 1–2 per figure |
 | A node that fails / gets eliminated | `#C47A78` solid + `#8C4644` stroke, ≤1, never beside a celadon focus |
 | Execution order in a diagram | celadon-ink sequence dots, ≤6 per figure |

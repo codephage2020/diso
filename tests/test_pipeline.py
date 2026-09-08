@@ -167,17 +167,29 @@ class PipelineTests(unittest.TestCase):
         self.assertRejected(self.inject_svg('<rect x="4" y="4" width="160" height="64" fill="#78c2c4"/>' * 2), "focus nodes")
         self.assertRejected(self.inject_svg('<circle r="12" fill="#267072" cx="24" cy="24"/>' * 7), "sequence dots")
 
-    def test_modes_keep_mapping_boundaries_sources_and_matching_toc(self):
+    def test_modes_keep_mapping_sources_and_matching_toc(self):
         for mode in ("kid", "standard", "deep"):
             with self.subTest(mode):
                 page = render(self.data, mode)
                 self.assertClean(page)
                 nodes = list(parse_html(page).root.walk())
                 ids = {n.attrs.get("id") for n in nodes}
-                self.assertTrue({"p1", "p2", "p4", "sources", "takeaway"} <= ids)
+                self.assertTrue({"p1", "p2", "sources", "takeaway"} <= ids)
+                self.assertNotIn("p4", ids)
+                self.assertNotIn("#p4", page)
                 self.assertEqual("p3" in ids, mode != "kid")
                 self.assertEqual(any(n.tag == "details" for n in nodes), mode == "deep")
                 self.assertEqual("N ≈ L" in page, mode == "deep")
+
+    def test_retired_section_fields_are_ignored_in_all_modes(self):
+        legacy = copy.deepcopy(self.data)
+        legacy.update(misconceptions=[{"belief": "retired"}], kid_boundary="retired")
+        legacy["headings"]["p4"] = "retired"
+        legacy["labels"] = {"p4": "retired", "reason": "retired", "misconception": "retired"}
+        for mode in ("kid", "standard", "deep"):
+            with self.subTest(mode=mode):
+                self.assertEqual(render(legacy, mode), render(self.data, mode))
+                self.assertClean(render(legacy, mode))
 
     def test_plain_fields_are_escaped_once_and_placeholders_stay_literal(self):
         data = copy.deepcopy(self.data)
@@ -196,7 +208,6 @@ class PipelineTests(unittest.TestCase):
         data["lang"] = "en"
         self.assertClean(render(data))
         self.assertIn('aria-label="Contents"', render(data))
-        self.assertIn("Why this seems plausible: ", render(data))
         data["lang"] = "ja"
         with self.assertRaises(ValueError):
             render(data)
