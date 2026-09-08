@@ -1,19 +1,12 @@
 # diso — 深入浅出
 
-A Claude skill that turns a topic into an illustrated, self-contained HTML page. Start with an analogy, understand the real mechanism, and explore its design trade-offs.
+A skill that turns a topic into an illustrated, self-contained HTML page. Start with an analogy, understand the real mechanism, and explore its design trade-offs.
 
-Hand-drawn SVG diagrams. No JavaScript or external dependencies. Open in any browser.
-
-<details>
-<summary>View full preview</summary>
-
-![B+ tree explanation preview](examples/preview.png)
-
-</details>
+Hand-drawn inline SVG. No JavaScript, no external dependencies. Open in any browser.
 
 ## Install
 
-Requires Python 3.10+ to generate pages.
+Requires nothing but the agent runtime — pages are written directly as HTML.
 
 ```bash
 git clone https://github.com/codephage2020/diso.git ~/.claude/skills/diso
@@ -35,18 +28,8 @@ For a project-only installation, clone into `.claude/skills/diso` inside your pr
 | `--kid` | A shorter explanation with an illustrated intuition and compact mechanism |
 | `--deep` | Standard plus formal details, assumptions and boundary conditions |
 
-Every mode includes sources and follows the input language. The skill writes `diso-<topic>.json` and `diso-<topic>.html` to your working directory. Open the HTML directly; no server is needed.
+Every mode includes sources and follows the input language. The skill writes `diso-<topic>.html` to your working directory. Open it directly; no server is needed.
 
-## Development
+## How it works
 
-Run from the repository root:
-
-```bash
-python3 scripts/build.py examples/btree-index.json -o diso-btree-index.html
-python3 scripts/check.py diso-btree-index.html
-python3 -m unittest discover -s tests -v
-```
-
-The builder validates before replacing output. Errors and warnings fail validation. Citation links are allowed; external rendering dependencies are not. Validation checks the supported format, not factual accuracy or visual quality, and is not a sanitizer for arbitrary HTML.
-
-See [SKILL.md](SKILL.md) for the workflow, [output-template.md](references/output-template.md) for the content schema and SVG snippets, and [design-tokens.md](references/design-tokens.md) for visual rules. The shared HTML and CSS live in [assets/base.html](assets/base.html).
+The skill reads [SKILL.md](SKILL.md) for the content contract and copies the shell and stylesheet from [base.html](base.html) verbatim, then writes the finished page in one pass. There is no build step, no intermediate format, and nothing to validate — visual quality is the agent's job, checked in a browser.
